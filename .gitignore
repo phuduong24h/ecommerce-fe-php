@@ -1,0 +1,13 @@
+# dependencies
+node_modules
+
+# production
+/build
+/dist
+/logs
+
+/public
+
+# local env files
+.env*
+!.env.example
