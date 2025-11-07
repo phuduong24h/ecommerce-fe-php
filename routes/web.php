@@ -10,6 +10,8 @@ use App\Http\Controllers\Admin\WarrantyClaimController;
 use App\Http\Controllers\Admin\UserController;        // ← THÊM DÒNG NÀY
 use App\Http\Controllers\Admin\SettingController;   // ← THÊM DÒNG NÀY
 use App\Http\Controllers\Admin\WarrantyPolicyController;
+use App\Http\Controllers\Cart\CartController;
+
 
 // ADMIN ROUTES - KHÔNG CẦN LOGIN ĐỂ TEST
 Route::prefix('admin')
@@ -57,5 +59,8 @@ Route::prefix('admin')
         Route::get('reports/sales/{year?}', [DashboardController::class, 'salesReport'])
             ->name('reports.sales')
             ->where('year', '[0-9]{4}');
-
     });
+// Cart Routes
+Route::get('/cart', [CartController::class, 'index'])->name('cart.index');
+Route::post('/cart/update', [CartController::class, 'update'])->name('cart.update');
+Route::post('/cart/remove', [CartController::class, 'remove'])->name('cart.remove');
