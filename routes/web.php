@@ -9,6 +9,14 @@ use App\Http\Controllers\Admin\WarrantyClaimController;
 use App\Http\Controllers\Admin\UserController;
 use App\Http\Controllers\Admin\SettingController;
 use App\Http\Controllers\Admin\WarrantyPolicyController;
+use App\Http\Controllers\Cart\CartController;
+
+
+
+// Cart Routes
+Route::get('/cart', [CartController::class, 'index'])->name('cart.index');
+Route::post('/cart/update', [CartController::class, 'update'])->name('cart.update');
+Route::post('/cart/remove', [CartController::class, 'remove'])->name('cart.remove');
 
 // ========================================
 // 1. ADMIN ROUTES (GIAO DIỆN)
@@ -111,3 +119,4 @@ Route::prefix('api')->group(function () {
             ->withHeaders($response->headers());
     })->where('any', '.*');
 });
+

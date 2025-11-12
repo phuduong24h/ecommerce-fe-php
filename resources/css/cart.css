@@ -1,0 +1,15 @@
+.cart-item {
+    transition: all 0.2s;
+}
+.cart-item:hover {
+    background-color: #f8f9fa;
+}
+.btn-minus, .btn-plus {
+    width: 32px;
+}
+.quantity-input {
+    width: 40px !important;
+}
+.sticky-top {
+    top: 20px;
+}
