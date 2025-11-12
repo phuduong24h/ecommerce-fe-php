@@ -12,7 +12,6 @@ use App\Http\Controllers\Admin\WarrantyPolicyController;
 use App\Http\Controllers\Cart\CartController;
 
 
-
 // Cart Routes
 Route::get('/cart', [CartController::class, 'index'])->name('cart.index');
 Route::post('/cart/update', [CartController::class, 'update'])->name('cart.update');
