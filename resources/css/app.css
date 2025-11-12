@@ -1,109 +1,120 @@
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
+    @tailwind base;
+    @tailwind components;
+    @tailwind utilities;
 
-@layer base {
-    :root {
-        --font-size: 14px;
-        --background: #ffffff;
-        --foreground: #0f172a;
-        --card: #ffffff;
-        --card-foreground: #0f172a;
-        --popover: #ffffff;
-        --popover-foreground: #0f172a;
-        --primary: #030213;
-        --primary-foreground: #ffffff;
-        --secondary: #f1f5f9;
-        --secondary-foreground: #030213;
-        --muted: #f8fafc;
-        --muted-foreground: #64748b;
-        --accent: #e2e8f0;
-        --accent-foreground: #030213;
-        --destructive: #dc2626;
-        --destructive-foreground: #ffffff;
-        --border: rgba(0, 0, 0, 0.1);
-        --input: transparent;
-        --input-background: #f3f4f6;
-        --switch-background: #cbd5e1;
-        --ring: #3b82f6;
-        --radius: 0.5rem;
-        /* === SIDEBAR COLORS === */
-        --sidebar: #ffffff;
-        --sidebar-foreground: #0f172a;
-        --sidebar-primary: #030213;
-        --sidebar-primary-foreground: #ffffff;
-        --sidebar-accent: #f1f5f9;
-        --sidebar-accent-foreground: #030213;
-        --sidebar-border: rgba(0, 0, 0, 0.1);
-        --sidebar-ring: #3b82f6;
+    @layer base {
+        :root {
+            --font-size: 14px;
+            --background: #ffffff;
+            --foreground: #0f172a;
+            --card: #ffffff;
+            --card-foreground: #0f172a;
+            --popover: #ffffff;
+            --popover-foreground: #0f172a;
+            --primary: #030213;
+            --primary-foreground: #ffffff;
+            --secondary: #f1f5f9;
+            --secondary-foreground: #030213;
+            --muted: #f8fafc;
+            --muted-foreground: #64748b;
+            --accent: #e2e8f0;
+            --accent-foreground: #030213;
+            --destructive: #dc2626;
+            --destructive-foreground: #ffffff;
+            --border: rgba(0, 0, 0, 0.1);
+            --input: transparent;
+            --input-background: #f3f4f6;
+            --switch-background: #cbd5e1;
+            --ring: #3b82f6;
+            --radius: 0.5rem;
+            /* === SIDEBAR COLORS === */
+            --sidebar: #ffffff;
+            --sidebar-foreground: #0f172a;
+            --sidebar-primary: #030213;
+            --sidebar-primary-foreground: #ffffff;
+            --sidebar-accent: #f1f5f9;
+            --sidebar-accent-foreground: #030213;
+            --sidebar-border: rgba(0, 0, 0, 0.1);
+            --sidebar-ring: #3b82f6;
+        }
+
+        .dark {
+            --background: #0f172a;
+            --foreground: #f8fafc;
+            --card: #1e293b;
+            --card-foreground: #f8fafc;
+            --primary: #f8fafc;
+            --primary-foreground: #0f172a;
+            --secondary: #1e293b;
+            --secondary-foreground: #f8fafc;
+            --muted: #334155;
+            --muted-foreground: #94a3b8;
+            --accent: #334155;
+            --accent-foreground: #f8fafc;
+            --destructive: #ef4444;
+            --destructive-foreground: #ffffff;
+            --border: #334155;
+            --ring: #60a5fa;
+            
+            --sidebar: #0f172a;
+            --sidebar-foreground: #f8fafc;
+            --sidebar-primary: #f8fafc;
+            --sidebar-primary-foreground: #0f172a;
+            --sidebar-accent: #1e293b;
+            --sidebar-accent-foreground: #f8fafc;
+            --sidebar-border: #334155;
+            --sidebar-ring: #60a5fa;
+
+        }
+
+        /* DÙNG CSS THUẦN THAY @apply */
+        * {
+            border-color: var(--border);
+            outline-color: rgba(59, 130, 246, 0.5);
+        }
+
+        body {
+            @apply bg-background text-foreground font-sans antialiased;
+        }
+
+        html {
+            font-size: var(--font-size);
+        }
     }
 
-    .dark {
-        --background: #0f172a;
-        --foreground: #f8fafc;
-        --card: #1e293b;
-        --card-foreground: #f8fafc;
-        --primary: #f8fafc;
-        --primary-foreground: #0f172a;
-        --secondary: #1e293b;
-        --secondary-foreground: #f8fafc;
-        --muted: #334155;
-        --muted-foreground: #94a3b8;
-        --accent: #334155;
-        --accent-foreground: #f8fafc;
-        --destructive: #ef4444;
-        --destructive-foreground: #ffffff;
-        --border: #334155;
-        --ring: #60a5fa;
-        
-        --sidebar: #0f172a;
-        --sidebar-foreground: #f8fafc;
-        --sidebar-primary: #f8fafc;
-        --sidebar-primary-foreground: #0f172a;
-        --sidebar-accent: #1e293b;
-        --sidebar-accent-foreground: #f8fafc;
-        --sidebar-border: #334155;
-        --sidebar-ring: #60a5fa;
+    @layer components {
+        .stats-card {
+            @apply bg-card text-card-foreground rounded-lg border border-border p-4 shadow-sm;
+        }
 
+        .stats-card-cyan {
+            @apply border-l-4 border-l-cyan-500;
+        }
+
+        .stats-card-purple {
+            @apply border-l-4 border-l-purple-500;
+        }
+
+        .stats-card-pink {
+            @apply border-l-4 border-l-pink-500;
+        }
+
+        .stats-card-blue {
+            @apply border-l-4 border-l-blue-500;
+        }
+
+        .chart-container {
+            @apply bg-card rounded-lg border border-border p-6 shadow-sm;
+        }
+            .pagination a {
+        @apply text-white bg-cyan-600 border border-cyan-500 rounded hover:bg-cyan-700;
     }
 
-    /* DÙNG CSS THUẦN THAY @apply */
-    * {
-        border-color: var(--border);
-        outline-color: rgba(59, 130, 246, 0.5);
+    .pagination .active span {
+        @apply bg-cyan-500 text-white border border-cyan-600;
     }
 
-    body {
-        @apply bg-background text-foreground font-sans antialiased;
+    .pagination .disabled span {
+        @apply text-gray-400 border border-gray-300;
     }
-
-    html {
-        font-size: var(--font-size);
     }
-}
-
-@layer components {
-    .stats-card {
-        @apply bg-card text-card-foreground rounded-lg border border-border p-4 shadow-sm;
-    }
-
-    .stats-card-cyan {
-        @apply border-l-4 border-l-cyan-500;
-    }
-
-    .stats-card-purple {
-        @apply border-l-4 border-l-purple-500;
-    }
-
-    .stats-card-pink {
-        @apply border-l-4 border-l-pink-500;
-    }
-
-    .stats-card-blue {
-        @apply border-l-4 border-l-blue-500;
-    }
-
-    .chart-container {
-        @apply bg-card rounded-lg border border-border p-6 shadow-sm;
-    }
-}
