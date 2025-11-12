@@ -1,54 +1,95 @@
 <?php
 
 namespace App\Http\Controllers\Admin;
-
+use Illuminate\Pagination\LengthAwarePaginator;
 use App\Http\Controllers\Controller;
+use App\Services\WarrantyService;
 use Illuminate\Http\Request;
-use App\Models\WarrantyClaim;
 
 class WarrantyClaimController extends Controller
 {
-    // Hiển thị danh sách warranty claims
+    protected $warrantyService;
+
+    public function __construct(WarrantyService $warrantyService)
+    {
+        $this->warrantyService = $warrantyService;
+    }
+
+    /**
+     * Hiển thị danh sách tất cả claim
+     */
+    // public function index(Request $request)
+    // {
+    //     $status = $request->query('status');
+    //     $claims = $this->warrantyService->getClaims($status) ?? [];
+
+    //     // Trả về view Blade
+    //     return view('admin.warranty.index', compact('claims'));
+    // }
+
     public function index(Request $request)
     {
-        $query = WarrantyClaim::query();
+        $status = $request->query('status');
 
-        // Lọc theo status nếu có
-        if ($request->has('status') && $request->status !== 'all') {
-            $query->where('status', $request->status);
-        }
+        // Lấy tất cả claims từ service và convert sang Collection
+        $allClaims = collect($this->warrantyService->getClaims($status) ?? []);
 
-        // Tìm kiếm theo product_name hoặc customer_name hoặc id
-        if ($request->has('search')) {
-            $search = $request->search;
-            $query->where(function($q) use ($search) {
-                $q->where('product_name', 'like', "%{$search}%")
-                  ->orWhere('customer_name', 'like', "%{$search}%")
-                  ->orWhere('id', 'like', "%{$search}%");
-            });
-        }
+        // --- Phân trang thủ công ---
+        $perPage = 5; // số claims / trang
+        $page = $request->get('page', 1); // trang hiện tại
 
-        $claims = $query->orderBy('date_submitted', 'desc')->paginate(10);
+        $claims = new LengthAwarePaginator(
+            $allClaims->forPage($page, $perPage), // slice dữ liệu
+            $allClaims->count(),                  // tổng số claims
+            $perPage,
+            $page,
+            ['path' => $request->url(), 'query' => $request->query()] // giữ query string
+        );
 
+        // Trả về view Blade
         return view('admin.warranty.index', compact('claims'));
     }
 
-    // Xem chi tiết claim
-    public function show(WarrantyClaim $claim)
+    /**
+     * Hiển thị chi tiết claim
+     */
+    public function show(string $id)
     {
-        return view('admin.warranty_claims.show', compact('claim'));
+        $claim = $this->warrantyService->getClaimById($id);
+
+        if (!$claim) {
+            return redirect()->back()->with('error', 'Yêu cầu bảo hành không tồn tại.');
+        }
+
+        return view('admin.warranty.show', compact('claim'));
     }
 
-    // Cập nhật status claim
-    public function updateStatus(Request $request, WarrantyClaim $claim)
+    /**
+     * Cập nhật claim
+     */
+    public function update(Request $request, string $id)
     {
-        $request->validate([
-            'status' => 'required|in:pending,in-progress,approved,rejected'
-        ]);
+        $status = $request->input('status');
+        $note = $request->input('note');
 
-        $claim->status = $request->status;
-        $claim->save();
+        $claim = $this->warrantyService->updateClaim($id, $status, $note);
 
-        return redirect()->route('admin.warranty_claims.index')->with('success', 'Status updated successfully');
+        if ($request->ajax()) {
+            if ($claim) {
+                return response()->json([
+                    'success' => true,
+                    'message' => 'Cập nhật yêu cầu bảo hành thành công.',
+                    'data' => $claim
+                ]);
+            } else {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Cập nhật thất bại, vui lòng thử lại.'
+                ], 400);
+            }
+        }
+
+        // Nếu không phải AJAX thì redirect như cũ
+        return redirect()->back()->with($claim ? 'success' : 'error', $claim ? 'Cập nhật yêu cầu bảo hành thành công.' : 'Cập nhật thất bại.');
     }
 }

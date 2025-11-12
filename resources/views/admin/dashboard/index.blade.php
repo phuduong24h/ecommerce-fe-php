@@ -1,4 +1,3 @@
-<!-- resources/views/admin/dashboard.blade.php -->
 @extends('layouts.admin')
 
 @section('title', 'Dashboard')
@@ -14,14 +13,14 @@
 
     <!-- Stats Grid -->
     <div class="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-        <!-- Revenue -->
+        <!-- Total Revenue -->
         <div class="bg-white shadow rounded-lg p-4 flex flex-col justify-between border-l-4 border-cyan-500">
             <div class="flex items-center justify-between">
                 <h3 class="text-sm md:text-base font-medium text-card-foreground">Total Revenue</h3>
                 <i class="fas fa-dollar-sign text-cyan-500 text-lg md:text-xl"></i>
             </div>
             <div class="mt-2">
-                <div class="text-2xl md:text-3xl font-bold text-cyan-600">$34,200</div>
+                <div class="text-2xl md:text-3xl font-bold text-cyan-600">${{ number_format($totalRevenue, 2) }}</div>
                 <p class="text-xs md:text-sm text-muted-foreground mt-1">+12.5% from last month</p>
             </div>
         </div>
@@ -33,8 +32,8 @@
                 <i class="fas fa-shopping-cart text-purple-500 text-lg md:text-xl"></i>
             </div>
             <div class="mt-2">
-                <div class="text-2xl md:text-3xl font-bold text-purple-600">1,140</div>
-                <p class="text-xs md:text-sm text-muted-foreground mt-1">+8.2% from last month</p>
+                <div class="text-2xl md:text-3xl font-bold text-purple-600">{{ $activeOrders }}</div>
+                <p class="text-xs md:text-sm text-muted-foreground mt-1">Orders in progress</p>
             </div>
         </div>
 
@@ -45,8 +44,8 @@
                 <i class="fas fa-box text-pink-500 text-lg md:text-xl"></i>
             </div>
             <div class="mt-2">
-                <div class="text-2xl md:text-3xl font-bold text-pink-600">342</div>
-                <p class="text-xs md:text-sm text-muted-foreground mt-1">28 low stock items</p>
+                <div class="text-2xl md:text-3xl font-bold text-pink-600">{{ $products['total'] }}</div>
+                <p class="text-xs md:text-sm text-muted-foreground mt-1">{{ $products['lowStock'] }} low stock items</p>
             </div>
         </div>
 
@@ -57,8 +56,8 @@
                 <i class="fas fa-shield-alt text-blue-500 text-lg md:text-xl"></i>
             </div>
             <div class="mt-2">
-                <div class="text-2xl md:text-3xl font-bold text-blue-600">23</div>
-                <p class="text-xs md:text-sm text-muted-foreground mt-1">5 pending review</p>
+                <div class="text-2xl md:text-3xl font-bold text-blue-600">{{ $warrantyClaims['total'] }}</div>
+                <p class="text-xs md:text-sm text-muted-foreground mt-1">{{ $warrantyClaims['pending'] }} pending review</p>
             </div>
         </div>
     </div>
@@ -91,15 +90,22 @@
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script>
 document.addEventListener('DOMContentLoaded', () => {
+    // Dữ liệu động từ Blade
+    const monthlyRevenue = @json(array_values($monthlyRevenue));
+    const monthlyRevenueLabels = @json(array_keys($monthlyRevenue));
+    const salesByCategoryData = @json(array_values($salesByCategory));
+    const salesByCategoryLabels = @json(array_keys($salesByCategory));
+    const monthlyOrders = @json(array_values($monthlyOrders));
+    const monthlyOrdersLabels = @json(array_keys($monthlyOrders));
 
     // Line Chart - Sales Overview
     new Chart(document.getElementById('salesChart'), {
         type: 'line',
         data: {
-            labels: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun'],
+            labels: monthlyRevenueLabels,
             datasets: [{
-                label: 'Sales',
-                data: [4200, 5100, 4800, 6200, 7100, 6800],
+                label: 'Revenue',
+                data: monthlyRevenue,
                 borderColor: '#06b6d4',
                 backgroundColor: 'rgba(6,182,212,0.1)',
                 fill: true,
@@ -113,9 +119,9 @@ document.addEventListener('DOMContentLoaded', () => {
     new Chart(document.getElementById('pieChart'), {
         type: 'doughnut',
         data: {
-            labels: ['Electronics', 'Accessories', 'Parts', 'Others'],
+            labels: salesByCategoryLabels,
             datasets: [{
-                data: [35, 25, 20, 20],
+                data: salesByCategoryData,
                 backgroundColor: ['#06b6d4', '#8b5cf6', '#ec4899', '#f59e0b']
             }]
         },
@@ -124,7 +130,7 @@ document.addEventListener('DOMContentLoaded', () => {
             maintainAspectRatio: true,
             plugins: {
                 legend: { position: 'right' },
-                tooltip: { callbacks: { label: ctx => `${ctx.label}: ${ctx.raw}%` } }
+                tooltip: { callbacks: { label: ctx => `${ctx.label}: ${ctx.raw}` } }
             }
         }
     });
@@ -133,17 +139,16 @@ document.addEventListener('DOMContentLoaded', () => {
     new Chart(document.getElementById('barChart'), {
         type: 'bar',
         data: {
-            labels: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun'],
+            labels: monthlyOrdersLabels,
             datasets: [{
                 label: 'Orders',
-                data: [145, 178, 162, 201, 234, 220],
+                data: monthlyOrders,
                 backgroundColor: '#8b5cf6',
                 borderRadius: 8
             }]
         },
         options: { responsive: true, maintainAspectRatio: true, plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true } } }
     });
-
 });
 </script>
 @endpush

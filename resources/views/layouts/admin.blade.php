@@ -15,7 +15,7 @@
         <div class="px-6 py-4 flex justify-between items-center">
             <!-- Logo + Tên -->
             <div class="flex items-center space-x-3">
-                <div class="h-10 w-10 rounded-lg bg-gradient-to-br from-cyan-500 to-blue-500 flex items-center justify-center text-white font-bold shadow-md">
+                <div class="h-10 w-10 rounded-lg bg-gradient-to-br from-cyan-500 to-blue-500 flex items-center justify-center text-white font-bold shadow-lg shadow-cyan-500/30">
                     🛍️
                 </div>
                 <h1 class="text-xl font-bold bg-gradient-to-r from-cyan-600 to-blue-600 bg-clip-text text-transparent">
@@ -29,10 +29,18 @@
                     <option>VN</option>
                     <option>EN</option>
                 </select>
-                <a href="#" class="bg-gradient-to-r from-cyan-500 to-blue-500 text-white px-4 py-2 rounded text-sm font-medium shadow hover:from-cyan-600 hover:to-blue-600 transition">
+                <a href="#"
+                   class="{{ ($viewMode ?? '') === 'admin'
+                       ? 'bg-gradient-to-r from-cyan-500 to-blue-500 hover:from-cyan-600 hover:to-blue-600 text-white shadow-lg shadow-cyan-500/30'
+                       : 'border border-gray-300 hover:bg-gray-100 text-gray-700'
+                   }} px-4 py-2 rounded text-sm font-medium transition-all duration-300">
                     Quản Trị
                 </a>
-                <a href="#" class="bg-gradient-to-r from-purple-500 to-pink-500 text-white px-4 py-2 rounded text-sm font-medium shadow hover:from-purple-600 hover:to-pink-600 transition">
+                <a href="#"
+                   class="{{ ($viewMode ?? '') === 'customer'
+                       ? 'bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white shadow-lg shadow-pink-500/30'
+                       : 'border border-gray-300 hover:bg-gray-100 text-gray-700'
+                   }} px-4 py-2 rounded text-sm font-medium transition-all duration-300">
                     Khách Hàng
                 </a>
             </div>
@@ -43,16 +51,16 @@
     <div class="flex flex-1">
         <!-- SIDEBAR -->
         <aside class="w-64 bg-white border-r shadow-sm min-h-screen p-4">
-            <nav class="space-y-2">
+            <nav class="flex flex-col gap-1">
                 @php
                     $menuItems = [
-                        ['route' => 'admin.dashboard', 'icon' => '📊', 'label' => 'Tổng Quan'],
-                        ['route' => 'admin.products.index', 'icon' => '📦', 'label' => 'Sản Phẩm'],
-                        ['route' => 'admin.orders.index', 'icon' => '🧾', 'label' => 'Đơn Hàng'],
-                        ['route' => 'admin.users.index', 'icon' => '👤', 'label' => 'Người Dùng'],
-                        ['route' => 'admin.warranty.index', 'icon' => '🔧', 'label' => 'Yêu Cầu Bảo Hành'],
-                        ['route' => 'admin.warranty_policies.index', 'icon' => '🔒', 'label' => 'Chính Sách Bảo Hành'],
-                        ['route' => 'admin.settings', 'icon' => '⚙️', 'label' => 'Cài Đặt'],
+                        ['route' => 'admin.dashboard', 'icon' => 'dashboard', 'label' => 'Tổng Quan'],
+                        ['route' => 'admin.products.index', 'icon' => 'products', 'label' => 'Sản Phẩm'],
+                        ['route' => 'admin.orders.index', 'icon' => 'orders', 'label' => 'Đơn Hàng'],
+                        ['route' => 'admin.users.index', 'icon' => 'users', 'label' => 'Người Dùng'],
+                        ['route' => 'admin.warranty.index', 'icon' => 'warranty', 'label' => 'Yêu Cầu Bảo Hành'],
+                        ['route' => 'admin.warranty_policies.index', 'icon' => 'policies', 'label' => 'Chính Sách Bảo Hành'],
+                        ['route' => 'admin.settings.index', 'icon' => 'settings', 'label' => 'Cài Đặt'],
                     ];
                     $currentRoute = Route::currentRouteName();
                 @endphp
@@ -62,15 +70,17 @@
                         $isActive = $currentRoute === $item['route'];
                     @endphp
                     <a href="{{ route($item['route']) }}"
-                        class="flex items-center space-x-3 px-4 py-3 rounded-lg font-medium transition-all duration-150
-                        {{ $isActive
-                            ? 'bg-gradient-to-r from-cyan-500 to-blue-500 text-white shadow-md'
-                            : 'text-gray-700 hover:bg-blue-100'
-                        }}">
-                        <span>{{ $item['icon'] }}</span>
+                       class="flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all duration-300
+                       {{ $isActive
+                           ? 'bg-gradient-to-r from-cyan-500 to-blue-500 text-white shadow-lg shadow-cyan-500/30'
+                           : 'text-gray-700 hover:bg-gray-100 hover:text-gray-900'
+                       }}">
+                        <!-- Sử dụng component SVG icon -->
+                        <x-icon-admin name="{{ $item['icon'] }}" class="h-5 w-5 {{ $isActive ? 'text-white' : 'text-gray-700' }}" />
                         <span>{{ $item['label'] }}</span>
+
                         @if($isActive)
-                            <span class="ml-auto text-white font-bold">›</span>
+                            <x-icon-admin name="chevron-right" class="h-4 w-4 text-white ml-auto" />
                         @endif
                     </a>
                 @endforeach

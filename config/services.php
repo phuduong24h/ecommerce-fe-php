@@ -34,5 +34,9 @@ return [
             'channel' => env('SLACK_BOT_USER_DEFAULT_CHANNEL'),
         ],
     ],
+    'api' => [
+        'url' => env('API_URL', 'http://localhost:3000'),
+        'token' => env('API_TOKEN', ''),
+    ],
 
 ];

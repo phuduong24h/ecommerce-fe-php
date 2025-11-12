@@ -3,133 +3,184 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
-use App\Models\Product;
+use App\Services\ProductService;
+use App\Services\CategoryService;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Storage;
+use Illuminate\Pagination\LengthAwarePaginator;
 
 class ProductController extends Controller
 {
-    /**
-     * Lấy categories tạm thời (mảng thuần) để test
-     */
-    private function getTestCategories()
+    protected $productService;
+    protected $categoryService;
+
+    public function __construct(ProductService $productService, CategoryService $categoryService)
     {
-        return [
-            ['id' => 1, 'name' => 'Electronics'],
-            ['id' => 2, 'name' => 'Accessories'],
-            ['id' => 3, 'name' => 'Parts'],
-        ];
+        $this->productService = $productService;
+        $this->categoryService = $categoryService;
     }
 
     /**
-     * DANH SÁCH SẢN PHẨM
+     * Trang danh sách sản phẩm
      */
-    public function index()
+    // public function index()
+    // {
+    //     $products = $this->productService->getAllProducts();
+    //     $categories = $this->categoryService->getAllCategories(); // lấy từ
+
+    //     return view('admin.products.index', compact('products', 'categories'));
+    // }
+    public function index(Request $request)
     {
-        $products = Product::latest()->paginate(10);
-        $categories = $this->getTestCategories();
-        return view('admin.products.index', compact('products', 'categories'));
+        // Lấy tất cả sản phẩm từ service và convert sang Collection
+        $allProducts = collect($this->productService->getAllProducts()); // ✅ convert sang Collection
+        $categories = $this->categoryService->getAllCategories();
+
+        // --- Phân trang thủ công ---
+        $perPage = 5; // số sản phẩm / trang
+        $page = $request->get('page', 1); // trang hiện tại
+
+        $paginatedProducts = new \Illuminate\Pagination\LengthAwarePaginator(
+            $allProducts->forPage($page, $perPage), // giờ sẽ chạy bình thường
+            $allProducts->count(),
+            $perPage,
+            $page,
+            ['path' => $request->url(), 'query' => $request->query()]
+        );
+
+        return view('admin.products.index', [
+            'products' => $paginatedProducts,
+            'categories' => $categories
+        ]);
     }
 
+
     /**
-     * FORM THÊM MỚI
+     * Trang thêm sản phẩm
      */
     public function create()
     {
-        $categories = $this->getTestCategories();
+        $categories = $this->categoryService->getAllCategories();
+        // dd($categories);// lấy từ service
         return view('admin.products.create', compact('categories'));
     }
 
     /**
-     * LƯU SẢN PHẨM MỚI
+     * Lưu sản phẩm mới
      */
     public function store(Request $request)
     {
         $validated = $request->validate([
-            'name'        => 'required|string|min:3|max:255',
-            'price'       => 'required|numeric|min:0',
-            'stock'       => 'required|integer|min:0',
-            'description' => 'nullable|string|max:2000',
-            'image'       => 'required|image|mimes:jpeg,png,jpg,gif|max:2048',
-            'category_id' => 'required|integer', // dùng integer vì test data
-        ], [
-            'name.required'  => 'Tên sản phẩm không được để trống.',
-            'image.required' => 'Vui lòng chọn ảnh sản phẩm.',
+            'name' => 'required|string|min:3|max:255',
+            'price' => 'required|numeric|min:0',
+            'stock' => 'required|integer|min:0',
+            'images' => 'nullable|array',
+            'images.*' => 'nullable|url',
+            'image_url' => 'nullable|url',
+            'categoryId' => 'nullable|string',
+            'description' => 'nullable|string',
         ]);
 
-        // Upload ảnh
-        $path = $request->file('image')->store('products', 'public');
-        $validated['image'] = basename($path);
+        // Map images
+        if (!empty($validated['images'])) {
+            // giữ nguyên array
+        } elseif (!empty($validated['image_url'])) {
+            $validated['images'] = [$validated['image_url']];
+        } else {
+            $validated['images'] = [];
+        }
+        unset($validated['image_url']);
 
-        Product::create($validated);
+        // Map categoryName từ CategoryService
+        $categories = $this->categoryService->getAllCategories();
 
-        return redirect()
-            ->route('admin.products.index')
-            ->with('success', 'Thêm sản phẩm thành công!');
+        // Map categoryName nếu rỗng
+        if (!empty($validated['categoryId'])) {
+            $category = collect($categories)->firstWhere('id', $validated['categoryId']);
+            if ($category) {
+                $validated['categoryName'] = $category['name'];
+            }
+        }
+
+        $result = $this->productService->createProduct($validated);
+
+        if ($result['success'] ?? false) {
+            return redirect()->route('admin.products.index')->with('success', 'Thêm sản phẩm thành công!');
+        }
+
+        return back()->with('error', $result['message'] ?? 'Lỗi khi thêm sản phẩm');
     }
 
     /**
-     * CHI TIẾT SẢN PHẨM
+     * Trang chỉnh sửa sản phẩm
      */
-    public function show(Product $product)
+    public function edit($id)
     {
-        return view('admin.products.show', compact('product'));
-    }
+        $products = $this->productService->getAllProducts();
+        $product = collect($products)->firstWhere('id', $id);
+        $categories = $this->categoryService->getAllCategories();
 
-    /**
-     * FORM SỬA
-     */
-    public function edit(Product $product)
-    {
-        $categories = $this->getTestCategories();
+        if (!$product) {
+            return redirect()->route('admin.products.index')->with('error', 'Sản phẩm không tồn tại');
+        }
+
         return view('admin.products.edit', compact('product', 'categories'));
     }
 
     /**
-     * CẬP NHẬT SẢN PHẨM
+     * Cập nhật sản phẩm
      */
-    public function update(Request $request, Product $product)
+    public function update(Request $request, $id)
     {
         $validated = $request->validate([
-            'name'        => 'required|string|min:3|max:255',
-            'price'       => 'required|numeric|min:0',
-            'stock'       => 'required|integer|min:0',
-            'description' => 'nullable|string|max:2000',
-            'image'       => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048',
-            'category_id' => 'required|integer', // dùng integer vì test data
-        ], [
-            'name.required' => 'Tên sản phẩm không được để trống.',
+            'name' => 'required|string|min:3|max:255',
+            'price' => 'required|numeric|min:0',
+            'stock' => 'required|integer|min:0',
+            'images' => 'nullable|array',
+            'images.*' => 'nullable|url',
+            'image_url' => 'nullable|url',
+            'categoryId' => 'nullable|string',
+            'description' => 'nullable|string',
         ]);
 
-        // Xử lý ảnh mới (nếu có)
-        if ($request->hasFile('image')) {
-            if ($product->image) {
-                Storage::delete('public/products/' . $product->image);
+        // Map images
+        if (!empty($validated['images'])) {
+            // giữ nguyên array
+        } elseif (!empty($validated['image_url'])) {
+            $validated['images'] = [$validated['image_url']];
+        } else {
+            $validated['images'] = [];
+        }
+        unset($validated['image_url']);
+
+        // Map categoryName từ CategoryService
+        if (!empty($validated['categoryId'])) {
+            $categories = $this->categoryService->getAllCategories();
+            $category = collect($categories)->firstWhere('_id', $validated['categoryId']);
+            if ($category) {
+                $validated['categoryName'] = $category['name'];
             }
-            $path = $request->file('image')->store('products', 'public');
-            $validated['image'] = basename($path);
         }
 
-        $product->update($validated);
+        $result = $this->productService->updateProduct($id, $validated);
 
-        return redirect()
-            ->route('admin.products.index')
-            ->with('success', 'Cập nhật thành công!');
+        if ($result['success'] ?? false) {
+            return redirect()->route('admin.products.index')->with('success', 'Cập nhật thành công!');
+        }
+
+        return back()->with('error', $result['message'] ?? 'Lỗi khi cập nhật');
     }
 
     /**
-     * XÓA SẢN PHẨM
+     * Xóa sản phẩm
      */
-    public function destroy(Product $product)
+    public function destroy($id)
     {
-        if ($product->image) {
-            Storage::delete('public/products/' . $product->image);
+        $result = $this->productService->deleteProduct($id);
+
+        if ($result['success'] ?? false) {
+            return redirect()->route('admin.products.index')->with('success', 'Xóa thành công!');
         }
 
-        $product->delete();
-
-        return redirect()
-            ->route('admin.products.index')
-            ->with('success', 'Xóa sản phẩm thành công!');
+        return back()->with('error', $result['message'] ?? 'Lỗi khi xóa');
     }
 }
