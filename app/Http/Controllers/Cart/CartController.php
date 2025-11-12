@@ -40,7 +40,12 @@ class CartController extends Controller
     public function update(Request $request)
     {
         $index = $request->index;
-        $qty = max(1, $request->qty);
+        $qty = (int)$request->qty;
+
+        // Đảm bảo số lượng tối thiểu là 1
+        if ($qty < 1) {
+            $qty = 1;
+        }
 
         $cart = Session::get('cart', []);
         if (isset($cart[$index])) {

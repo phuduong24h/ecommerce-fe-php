@@ -56,7 +56,7 @@
                 <!-- Cart -->
                 <a href="/cart" class="relative text-gray-700 hover:text-cyan-600">
                     <i class="fas fa-shopping-cart"></i>
-                    <span class="absolute -top-1 -right-1 text-xs bg-red-500 text-white rounded-full px-1">
+                    <span class="badge absolute -top-2 -right-2 w-5 h-5 flex items-center justify-center text-[10px] bg-red-500 text-white rounded-full">
                         {{ count(session('cart', [])) }}
                     </span>
                 </a>
