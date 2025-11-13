@@ -99,6 +99,8 @@ function removeFromCart(index, row) {
     .catch(err => {
         console.error('Lỗi xóa:', err);
         alert('Có lỗi khi xóa sản phẩm!');
+        // Khôi phục opacity nếu có lỗi
+        row.style.opacity = '1';
     });
 }
 
@@ -106,28 +108,52 @@ function removeFromCart(index, row) {
 function showEmptyCart() {
     const container = document.getElementById('cart-items-container');
     const summaryCol = document.querySelector('.col-lg-4');
+    const parentRow = document.querySelector('.row.g-4');
 
+    // Cập nhật nội dung container thành giao diện trống
     if (container) {
         container.innerHTML = `
-            <div class="text-center d-flex flex-column justify-content-center" style="min-height: 400px;">
-                <div style="margin-bottom: 30px;">
-                    <svg width="120" height="120" viewBox="0 0 120 120" fill="none" xmlns="http://www.w3.org/2000/svg">
-                        <circle cx="60" cy="60" r="60" fill="#dce4f0"/>
-                        <path d="M50 35H70C72.21 35 74 36.79 74 39V85C74 88.31 71.31 91 68 91H52C48.69 91 46 88.31 46 85V39C46 36.79 47.79 35 50 35Z" stroke="#8fa3c4" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
-                        <path d="M54 35C54 32.24 56.24 30 59 30C61.76 30 64 32.24 64 35" stroke="#8fa3c4" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
-                    </svg>
+            <div class="d-flex align-items-center justify-content-center" style="min-height: 600px;">
+                <div class="text-center">
+                    <div class="d-flex justify-content-center" style="margin-bottom: 30px;">
+                        <svg width="120" height="120" viewBox="0 0 120 120" fill="none" xmlns="http://www.w3.org/2000/svg">
+                            <circle cx="60" cy="60" r="60" fill="#dce4f0"/>
+                            <path d="M50 35H70C72.21 35 74 36.79 74 39V85C74 88.31 71.31 91 68 91H52C48.69 91 46 88.31 46 85V39C46 36.79 47.79 35 50 35Z" stroke="#8fa3c4" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+                            <path d="M54 35C54 32.24 56.24 30 59 30C61.76 30 64 32.24 64 35" stroke="#8fa3c4" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+                        </svg>
+                    </div>
+                    <h5 class="mb-2">Giỏ hàng trống</h5>
+                    <p class="text-muted mb-4">Thêm sản phẩm để bắt đầu mua sắm!</p>
+                    <a href="/" class="btn btn-primary">Tiếp tục mua sắm</a>
                 </div>
-                <h5 class="mb-2">Giỏ hàng trống</h5>
-                <p class="text-muted mb-4">Thêm sản phẩm để bắt đầu mua sắm!</p>
-                <a href="/" class="btn btn-primary">Tiếp tục mua sắm</a>
             </div>
         `;
     }
 
+    // Ẩn cột tổng đơn hàng với hiệu ứng mượt
     if (summaryCol) {
-        summaryCol.remove();
+        summaryCol.style.transition = 'opacity 0.3s';
+        summaryCol.style.opacity = '0';
+        setTimeout(() => {
+            summaryCol.remove();
+            
+            // Thay đổi layout thành full width
+            const cartCol = container.closest('.col-lg-8');
+            if (cartCol) {
+                cartCol.classList.remove('col-lg-8');
+                cartCol.classList.add('col-12');
+            }
+        }, 300);
+    } else {
+        // Nếu không có summaryCol, vẫn đổi layout
+        const cartCol = container.closest('.col-lg-8');
+        if (cartCol) {
+            cartCol.classList.remove('col-lg-8');
+            cartCol.classList.add('col-12');
+        }
     }
 
+    // Cập nhật badge về 0
     const badge = document.querySelector('.badge');
     if (badge) badge.textContent = '0';
 }
