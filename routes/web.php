@@ -10,7 +10,7 @@ use App\Http\Controllers\Admin\UserController;
 use App\Http\Controllers\Admin\SettingController;
 use App\Http\Controllers\Admin\WarrantyPolicyController;
 use App\Http\Controllers\Cart\CartController;
-
+use App\Http\Controllers\Customer\AccountController;
 
 // Cart Routes
 Route::get('/cart', [CartController::class, 'index'])->name('cart.index');
@@ -118,4 +118,12 @@ Route::prefix('api')->group(function () {
             ->withHeaders($response->headers());
     })->where('any', '.*');
 });
+// routes/web.php
 
+// Account Routes
+Route::prefix('account')->name('account.')->group(function () {
+    Route::get('/', [AccountController::class, 'index'])->name('index');
+    Route::get('/orders', [AccountController::class, 'orders'])->name('orders');
+    Route::get('/warranty', [AccountController::class, 'warranty'])->name('warranty');
+    Route::get('/profile', [AccountController::class, 'profile'])->name('profile');
+});

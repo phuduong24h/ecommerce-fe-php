@@ -48,8 +48,9 @@
 
             <!-- RIGHT: User, Cart, Language, Admin/Customer -->
             <div class="flex items-center space-x-3">
-                <!-- User icon -->
-                <a href="#" class="text-gray-700 hover:text-cyan-600">
+                <!-- User icon - Link to Account -->
+                <a href="{{ route('account.index') }}" 
+                   class="text-gray-700 hover:text-cyan-600 transition-colors {{ request()->is('account*') ? 'text-cyan-600' : '' }}">
                     <i class="fas fa-user"></i>
                 </a>
 
