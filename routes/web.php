@@ -17,7 +17,7 @@ use App\Http\Controllers\Cart\CartController;
 // ========================================
 // ***** BẠN CHỈ CẦN THÊM 3 DÒNG NÀY VÀO *****
 Route::get('/', function () {
-    return view('interface/home'); // Trỏ đến file 'resources/views/home.blade.php'
+    return view('user/interface/home'); // Trỏ đến file 'resources/views/home.blade.php'
 })->name('home');
 // ***********************************************
 
