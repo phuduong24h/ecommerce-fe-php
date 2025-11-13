@@ -9,8 +9,8 @@ use App\Http\Controllers\Admin\WarrantyClaimController;
 use App\Http\Controllers\Admin\UserController;
 use App\Http\Controllers\Admin\SettingController;
 use App\Http\Controllers\Admin\WarrantyPolicyController;
-use App\Http\Controllers\Cart\CartController;
-use App\Http\Controllers\Customer\AccountController;
+use App\Http\Controllers\User\CartController;
+use App\Http\Controllers\User\AccountController;
 
 // Cart Routes
 Route::get('/cart', [CartController::class, 'index'])->name('cart.index');

@@ -1,7 +1,7 @@
 <?php
 // app/Http/Controllers/Cart/CartController.php
 
-namespace App\Http\Controllers\Cart;
+namespace App\Http\Controllers\User;
 
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Session;
