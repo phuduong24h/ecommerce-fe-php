@@ -1,4 +1,4 @@
-{{-- resources/views/account/_profile.blade.php --}}
+{{-- resources/views/user/account/_profile.blade.php --}}
 
 <div class="max-w-2xl">
     <h2 class="text-xl font-semibold text-gray-900 mb-6">Thông Tin Cá Nhân</h2>

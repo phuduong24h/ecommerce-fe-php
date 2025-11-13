@@ -1,4 +1,4 @@
-{{-- resources/views/account/_warranty.blade.php --}}
+{{-- resources/views/user/account/_warranty.blade.php --}}
 
 @forelse($warranties as $warranty)
 <div class="border rounded-lg p-6 mb-4 hover:shadow-md transition-shadow">

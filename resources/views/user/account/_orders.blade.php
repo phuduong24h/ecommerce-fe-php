@@ -1,4 +1,4 @@
-{{-- resources/views/account/_orders.blade.php --}}
+{{-- resources/views/user/account/_orders.blade.php --}}
 
 @forelse($orders as $order)
 <div class="border rounded-lg p-6 mb-4 hover:shadow-md transition-shadow">

@@ -1,5 +1,5 @@
 <?php
-// app/Http/Controllers/CartController.php
+// app/Http/Controllers/Cart/CartController.php
 
 namespace App\Http\Controllers\Cart;
 
@@ -34,7 +34,7 @@ class CartController extends Controller
 
         $subtotal = collect($cart)->sum(fn($item) => $item['price'] * $item['qty']);
 
-        return view('cart.index', compact('cart', 'subtotal'));
+        return view('user.cart.index', compact('cart', 'subtotal')); // ← Sửa đây
     }
 
     public function update(Request $request)

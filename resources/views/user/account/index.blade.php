@@ -1,4 +1,4 @@
-{{-- resources/views/account/index.blade.php --}}
+{{-- resources/views/user/account/index.blade.php --}}
 @extends('layouts.app')
 
 @section('content')
@@ -42,11 +42,11 @@
     <!-- Tab Content -->
     <div class="bg-white rounded-lg shadow-sm p-6">
         @if($activeTab === 'orders')
-            @include('account._orders')
+            @include('user.account._orders')
         @elseif($activeTab === 'warranty')
-            @include('account._warranty')
+            @include('user.account._warranty')
         @elseif($activeTab === 'profile')
-            @include('account._profile')
+            @include('user.account._profile')
         @endif
     </div>
 </div>

@@ -1,3 +1,4 @@
+{{-- resources/views/user/cart/_item.blade.php --}}
 @php $itemTotal = $item['price'] * $item['qty']; @endphp
 
 <div class="d-flex align-items-center justify-content-between p-3 border-bottom cart-item" data-index="{{ $index }}">

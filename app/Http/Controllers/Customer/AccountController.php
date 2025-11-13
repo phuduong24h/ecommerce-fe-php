@@ -51,7 +51,7 @@ class AccountController extends Controller
             ],
         ];
 
-        return view('account.index', [
+        return view('user.account.index', [
             'activeTab' => 'orders',
             'orders' => $orders
         ]);
@@ -80,7 +80,7 @@ class AccountController extends Controller
             ],
         ];
 
-        return view('account.index', [
+        return view('user.account.index', [ // ← Sửa đây
             'activeTab' => 'warranty',
             'warranties' => $warranties
         ]);
@@ -98,7 +98,7 @@ class AccountController extends Controller
             'member_since' => 'Tháng 1, 2024'
         ];
 
-        return view('account.index', [
+        return view('user.account.index', [ // ← Sửa đây
             'activeTab' => 'profile',
             'user' => $user
         ]);
