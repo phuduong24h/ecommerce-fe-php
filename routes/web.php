@@ -12,6 +12,16 @@ use App\Http\Controllers\Admin\WarrantyPolicyController;
 use App\Http\Controllers\Cart\CartController;
 
 
+// ========================================
+// 1. ROUTE TRANG CHỦ (GIAO DIỆN CHÍNH)
+// ========================================
+// ***** BẠN CHỈ CẦN THÊM 3 DÒNG NÀY VÀO *****
+Route::get('/', function () {
+    return view('home'); // Trỏ đến file 'resources/views/home.blade.php'
+})->name('home');
+// ***********************************************
+
+
 // Cart Routes
 Route::get('/cart', [CartController::class, 'index'])->name('cart.index');
 Route::post('/cart/update', [CartController::class, 'update'])->name('cart.update');

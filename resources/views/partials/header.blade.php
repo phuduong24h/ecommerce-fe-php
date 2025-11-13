@@ -6,81 +6,81 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>@yield('title', 'Bảng điều khiển')</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    @stack('styles')
+    @vite(['resources/css/styles.css', 'resources/js/app.js'])
 </head>
 
 <body class="bg-gray-50 font-sans antialiased min-h-screen flex flex-col">
     <!-- HEADER -->
-    <header class="bg-white border-b shadow-sm sticky top-0 z-50">
-        <div class="px-6 py-3 flex items-center justify-between w-full">
-            
-            <!-- LEFT: Logo + Menu -->
-            <div class="flex items-center space-x-6">
-                <!-- Logo + Tên -->
-                <div class="flex items-center space-x-3 cursor-pointer">
-                    <div
-                        class="h-10 w-10 rounded-lg bg-gradient-to-br from-cyan-500 to-blue-500 flex items-center justify-center text-white font-bold shadow-lg shadow-cyan-500/30">
-                        🛍️
-                    </div>
-                    <div class="flex flex-col leading-tight">
-                        <h1
-                            class="text-xl font-bold bg-gradient-to-r from-cyan-600 to-blue-600 bg-clip-text text-transparent">
-                            Cửa Hàng Công Nghệ
-                        </h1>
-                        <small class="text-gray-400 text-sm">Cửa Hàng</small>
-                    </div>
-                </div>
+    <header class="header">
+        <nav class="header__navbar">
 
-                <!-- Menu -->
-                <nav class="flex items-center space-x-3">
+            <ul class="header__navbar-list">
+
+                <li class="header__navbar-item header__navbar-item--logo">
+                    <i class="header__logo-icon fa-solid fa-shield"></i>
+                    <div class="header__logo-text">
+                        <span class="header__logo-title">Cửa Hàng Công Nghệ</span>
+                        <span class="header__logo-subtitle">Cửa Hàng</span>
+                    </div>
+                </li>
+
+                <li class="header__navbar-item">
                     <a href="{{ url('/') }}"
-                       class="flex items-center gap-1 px-3 py-1 rounded transition-all duration-300 font-medium
-                       {{ request()->is('/') ? 'bg-gradient-to-r from-cyan-500 to-blue-500 text-white shadow' : 'text-gray-700 hover:bg-gray-100 hover:text-cyan-600' }}">
-                        <i class="fas fa-home"></i> Trang Chủ
+                    class="header__navbar-link {{ request()->is('/') ? 'header__navbar-link--active' : '' }}"
+                    style="text-decoration: none;">
+                        <i class="header__navbar-icon fa-solid fa-house"></i>
+                        Trang Chủ
                     </a>
+                </li>
+
+                <li class="header__navbar-item">
                     <a href="{{ url('/warranty') }}"
-                       class="flex items-center gap-1 px-3 py-1 rounded transition-all duration-300 font-medium
-                       {{ request()->is('warranty') ? 'bg-gradient-to-r from-purple-500 to-pink-500 text-white shadow' : 'text-gray-700 hover:bg-gray-100 hover:text-purple-600' }}">
-                        <i class="fas fa-shield"></i> Bảo Hành
+                    class="header__navbar-link {{ request()->is('warranty') ? 'header__navbar-link--active' : '' }}"
+                    style="text-decoration: none;">
+                        <i class="header__navbar-icon fa-solid fa-shield"></i>
+                        Bảo Hành
                     </a>
-                </nav>
-            </div>
+                </li>
+            </ul>
 
-            <!-- RIGHT: User, Cart, Language, Admin/Customer -->
-            <div class="flex items-center space-x-3">
-                <!-- User icon -->
-                <a href="#" class="text-gray-700 hover:text-cyan-600">
-                    <i class="fas fa-user"></i>
-                </a>
+            <ul class="header__navbar-list">
 
-                <!-- Cart -->
-                <a href="/cart" class="relative text-gray-700 hover:text-cyan-600">
-                    <i class="fas fa-shopping-cart"></i>
-                    <span class="absolute -top-1 -right-1 text-xs bg-red-500 text-white rounded-full px-1">
-                        {{ count(session('cart', [])) }}
-                    </span>
-                </a>
+                <li class="header__navbar-item">
+                    <a href="#" class="header__navbar-icon header__navbar-icon-right fa-regular fa-user"
+                    style="text-decoration: none; color: inherit;">
+                    </a>
+                </li>
 
-                <!-- Language selector -->
-                <select class="text-sm border rounded px-2 py-1 focus:ring-2 focus:ring-cyan-500">
-                    <option>VN</option>
-                    <option>EN</option>
-                </select>
+                <li class="header__navbar-item">
+                    <a href="/cart" class="header__navbar-icon header__navbar-icon-right fa-solid fa-cart-shopping"
+                    style="text-decoration: none; color: inherit; position: relative;">
 
-                <!-- Admin / Customer buttons -->
-                <a href="{{ route('admin.dashboard') }}"
-                   class="px-4 py-2 rounded text-sm font-medium transition-all duration-300
-                   {{ request()->is('admin*') ? 'bg-gradient-to-r from-cyan-500 to-blue-500 text-white shadow-lg shadow-cyan-500/30' : 'border border-gray-300 text-gray-700 hover:bg-gray-100 hover:text-cyan-600' }}">
-                    Quản Trị
-                </a>
+                        @if(session('cart') && count(session('cart', [])) > 0)
+                            <span style="position: absolute; top: -8px; right: -8px; font-size: 1rem; background: red; color: white; border-radius: 50%; padding: 2px 5px; line-height: 1;">
+                                {{ count(session('cart', [])) }}
+                            </span>
+                        @endif
+                    </a>
+                </li>
 
-                <a href="{{ url('/') }}"
-                   class="px-4 py-2 rounded text-sm font-medium transition-all duration-300
-                   {{ request()->is('/') ? 'bg-gradient-to-r from-purple-500 to-pink-500 text-white shadow-lg shadow-pink-500/30' : 'border border-gray-300 text-gray-700 hover:bg-gray-100 hover:text-purple-600' }}">
-                    Khách Hàng
-                </a>
-            </div>
-        </div>
+                <li class="header__navbar-item">
+                    <i class="header__navbar-icon header__navbar-icon-right fa-solid fa-language"></i>
+                    <span style="font-size: 1.2rem; margin-left: 4px;">EN</span>
+                </li>
+
+                <li class="header__navbar-item header__navbar-item--strong" style="border: 1px solid #ccc; padding: 6px 12px; border-radius: 7px; font-size: 1.3rem;">
+                    <a href="{{ route('admin.dashboard') }}" style="text-decoration: none; color: inherit;">
+                        Quản trị
+                    </a>
+                </li>
+
+                <li class="header__navbar-item header__navbar-item--strong header__navbar-item--highlight">
+                    <a href="{{ url('/') }}" style="text-decoration: none; color: white;">
+                        Khách hàng
+                    </a>
+                </li>
+            </ul>
+        </nav>
     </header>
 
     @stack('scripts')
