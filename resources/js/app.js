@@ -1,14 +1,10 @@
 import './bootstrap';
 
-
 /**
  * Hàm này chịu trách nhiệm gọi API và hiển thị sản phẩm ra màn hình
  * @param {string} searchTerm - Từ khóa tìm kiếm (mặc định là chuỗi rỗng)
  */
-
-
 function loadProducts(searchTerm = '') {
-
     // Lấy container sản phẩm
     const productContainer = document.querySelector('.home-product .grid__row');
 
@@ -17,11 +13,24 @@ function loadProducts(searchTerm = '') {
         return;
     }
 
-    // Xây dựng URL động. Nếu có searchTerm, thêm nó vào query
-    let apiUrl = 'http://localhost:3000/api/user/products';
+    // ✅ FIX 1: Sửa URL API cho khớp với backend (bỏ /user)
+    // Backend: router.get("/") → /api/products
+    let apiUrl = 'http://localhost:3000/api/v1/products';
+
+    // ✅ FIX 2: Backend dùng query param là "search", không phải "keyword"
+    const params = new URLSearchParams();
     if (searchTerm) {
-        apiUrl += `?search=${encodeURIComponent(searchTerm)}`;
+        params.append('search', searchTerm);
     }
+    // Thêm page và pageSize mặc định
+    params.append('page', '1');
+    params.append('pageSize', '100'); // Lấy nhiều sản phẩm hơn
+
+    if (params.toString()) {
+        apiUrl += `?${params.toString()}`;
+    }
+
+    console.log('🔗 API URL:', apiUrl);
 
     // Hiển thị "Đang tải..."
     productContainer.innerHTML = '<p style="padding: 20px; text-align: center;">Đang tải sản phẩm...</p>';
@@ -36,14 +45,16 @@ function loadProducts(searchTerm = '') {
         .then(responseData => {
             console.log('📦 Response:', responseData);
 
-            const { data } = responseData;
+            // ✅ FIX 3: Backend trả về responseSuccess({ data: { products, total, ... } })
+            // Nên cấu trúc là: responseData.data.products
+            const productsData = responseData.data;
 
-            if (!data || !data.products) {
+            if (!productsData || !productsData.products) {
                 productContainer.innerHTML = '<p style="padding: 20px; text-align: center;">Không có dữ liệu sản phẩm</p>';
                 return;
             }
 
-            const products = data.products;
+            const products = productsData.products;
             console.log(`✅ Loaded ${products.length} products`);
 
             // Xóa nội dung "Đang tải..."
@@ -117,14 +128,24 @@ document.addEventListener('DOMContentLoaded', function() {
     const searchInput = document.querySelector('.header__search-input');
 
     if (searchInput) {
-        searchInput.addEventListener('keyup', function(event) {
-            // Lấy giá trị người dùng gõ
-            const searchTerm = event.target.value;
+        // ✅ FIX 4: Thêm debounce để tránh gọi API quá nhiều lần
+        let debounceTimer;
 
-            // Gọi lại hàm loadProducts với từ khóa mới
-            // (Bạn có thể thêm logic "debounce" ở đây nếu muốn tối ưu hơn)
-            loadProducts(searchTerm);
+        searchInput.addEventListener('keyup', function(event) {
+            // Xóa timer cũ
+            clearTimeout(debounceTimer);
+
+            // Đợi 500ms sau khi người dùng ngừng gõ mới gọi API
+            debounceTimer = setTimeout(() => {
+                const searchTerm = event.target.value.trim();
+                console.log('🔍 Searching for:', searchTerm);
+                loadProducts(searchTerm);
+            }, 500);
         });
+    } else {
+        console.warn('⚠️ Không tìm thấy input search .header__search-input');
     }
 });
 
+// ✅ FIX 5: Export hàm loadProducts để có thể gọi từ inline script trong blade
+window.loadProducts = loadProducts;

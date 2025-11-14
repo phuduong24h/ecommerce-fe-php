@@ -43,7 +43,7 @@
                 {{-- Nơi để hiển thị sản phẩm, giống hệt file cũ của bạn --}}
                 <div class="home-product">
                     <div class="grid__row">
-                        </div>
+                    </div>
                 </div>
 
             </div>
