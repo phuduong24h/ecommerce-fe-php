@@ -11,8 +11,8 @@
             </svg>
         </div>
         <div>
-            <h3 class="text-2xl font-bold text-gray-900">{{ $user['name'] }}</h3>
-            <p class="text-gray-500">{{ $user['email'] }}</p>
+            <h3 class="text-2xl font-bold text-gray-900">{{ $user['name'] ?? 'Chưa cập nhật' }}</h3>
+            <p class="text-gray-500">{{ $user['email'] ?? 'Chưa cập nhật' }}</p>
         </div>
     </div>
 
@@ -20,17 +20,17 @@
     <div class="space-y-6">
         <div>
             <label class="block text-sm font-medium text-gray-500 mb-1">Điện Thoại</label>
-            <p class="text-lg text-gray-900">{{ $user['phone'] }}</p>
+            <p class="text-lg text-gray-900">{{ $user['phone'] ?? 'Chưa cập nhật' }}</p>
         </div>
 
         <div>
             <label class="block text-sm font-medium text-gray-500 mb-1">Địa Chỉ</label>
-            <p class="text-lg text-gray-900">{{ $user['address'] }}</p>
+            <p class="text-lg text-gray-900">{{ $user['address'] ?? 'Chưa cập nhật' }}</p>
         </div>
 
         <div>
             <label class="block text-sm font-medium text-gray-500 mb-1">Thành Viên Từ</label>
-            <p class="text-lg text-gray-900">{{ $user['member_since'] }}</p>
+            <p class="text-lg text-gray-900">{{ $user['member_since'] ?? 'Chưa cập nhật' }}</p>
         </div>
     </div>
 

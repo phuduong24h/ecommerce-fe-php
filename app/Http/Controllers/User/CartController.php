@@ -1,86 +1,107 @@
 <?php
-// app/Http/Controllers/Cart/CartController.php
 
 namespace App\Http\Controllers\User;
 
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Session;
 use App\Http\Controllers\Controller;
+use App\Services\ApiClientService;
 
 class CartController extends Controller
 {
+    protected ApiClientService $api;
+
+    public function __construct(ApiClientService $api)
+    {
+        $this->api = $api;
+    }
+
     public function index()
     {
-        $cart = Session::get('cart', []);
+        $res = $this->api->get("cart");
+        $cart = $res['data'] ?? [];
 
-        // DEMO DATA – chỉ chạy lần đầu
-        if (empty($cart)) {
-            Session::put('cart', [
-                [
-                    'name' => 'Mechanical Keyboard',
-                    'price' => 89.99,
-                    'qty' => 1,
-                    'image' => 'https://images.unsplash.com/photo-1600585154340-be6161a56a0c?w=100&h=100&fit=crop'
-                ],
-                [
-                    'name' => 'Wireless Mouse',
-                    'price' => 29.99,
-                    'qty' => 1,
-                    'image' => 'https://images.unsplash.com/photo-1527864550417-7fd91fc51a46?w=100&h=100&fit=crop'
-                ]
-            ]);
-            $cart = Session::get('cart');
-        }
+        $subtotal = collect($cart)->sum(
+            fn($i) => $i['price'] * $i['quantity']
+        );
 
-        $subtotal = collect($cart)->sum(fn($item) => $item['price'] * $item['qty']);
-
-        return view('user.cart.index', compact('cart', 'subtotal')); // ← Sửa đây
+        return view('user.cart.index', compact('cart', 'subtotal'));
     }
 
     public function update(Request $request)
     {
-        $index = $request->index;
-        $qty = (int)$request->qty;
+        $index = intval($request->index);
+        $qty   = intval($request->qty);
 
-        // Đảm bảo số lượng tối thiểu là 1
-        if ($qty < 1) {
-            $qty = 1;
+        // 1. lấy cart hiện tại
+        $res = $this->api->get("cart");
+        $cart = $res["data"] ?? [];
+
+        // 2. cập nhật số lượng
+        if (!isset($cart[$index])) {
+            return response()->json(['success' => false], 400);
         }
 
-        $cart = Session::get('cart', []);
-        if (isset($cart[$index])) {
-            $cart[$index]['qty'] = $qty;
-            Session::put('cart', $cart);
+        $cart[$index]['quantity'] = $qty;
+
+        // 3. gửi PUT toàn bộ cart lên Node
+        $res2 = $this->api->put("cart", [
+            'cart' => $cart
+        ]);
+
+        if (!($res2['success'] ?? false)) {
+            return response()->json(['success' => false], 400);
         }
 
-        $subtotal = collect($cart)->sum(fn($item) => $item['price'] * $item['qty']);
+        // 4. tính toán lại và trả về
+        $updatedCart = $res2['data'];
+        $item = $updatedCart[$index];
+
+        $itemTotal = $item['price'] * $item['quantity'];
+        $subtotal = collect($updatedCart)->sum(fn($i) => $i['price'] * $i['quantity']);
 
         return response()->json([
-            'success' => true,
-            'subtotal' => number_format($subtotal, 2),
-            'total' => number_format($subtotal + 9.60, 2),
-            'item_total' => number_format($cart[$index]['price'] * $qty, 2)
+            'success'   => true,
+            'item_total'=> '$' . number_format($itemTotal, 2),
+            'subtotal'  => '$' . number_format($subtotal, 2),
+            'total'     => '$' . number_format($subtotal + 9.6, 2),
+            'cart_count' => count($updatedCart)
         ]);
     }
 
+
     public function remove(Request $request)
     {
-        $index = $request->index;
-        $cart = Session::get('cart', []);
+        $index = intval($request->index);
 
-        if (isset($cart[$index])) {
-            unset($cart[$index]);
-            $cart = array_values($cart);
-            Session::put('cart', $cart);
+        // lấy giỏ
+        $res = $this->api->get("cart");
+        $cart = $res["data"] ?? [];
+
+        if (!isset($cart[$index])) {
+            return response()->json(['success' => false], 400);
         }
 
-        $subtotal = collect($cart)->sum(fn($item) => $item['price'] * $item['qty']);
+        // xoá item
+        array_splice($cart, $index, 1);
+
+        // update giỏ hàng mới
+        $res2 = $this->api->put("cart", [
+            'cart' => $cart
+        ]);
+
+        if (!($res2['success'] ?? false)) {
+            return response()->json(['success' => false], 400);
+        }
+
+        $updatedCart = $res2['data'];
+        $subtotal = collect($updatedCart)->sum(fn($i) => $i['price'] * $i['quantity']);
 
         return response()->json([
-            'success' => true,
-            'subtotal' => number_format($subtotal, 2),
-            'total' => number_format($subtotal + 9.60, 2),
-            'item_count' => count($cart)
+            'success'   => true,
+            'item_count' => count($updatedCart),
+            'subtotal'  => '$' . number_format($subtotal, 2),
+            'total'     => '$' . number_format($subtotal + 9.6, 2),
+            'cart_count' => count($updatedCart)
         ]);
     }
 }

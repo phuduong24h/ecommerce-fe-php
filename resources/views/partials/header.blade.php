@@ -55,12 +55,19 @@
                 </a>
 
                 <!-- Cart -->
+                <!-- Cart -->
                 <a href="/cart" class="relative text-gray-700 hover:text-cyan-600">
-                    <i class="fas fa-shopping-cart"></i>
-                    <span class="badge absolute -top-2 -right-2 w-5 h-5 flex items-center justify-center text-[10px] bg-red-500 text-white rounded-full">
-                        {{ count(session('cart', [])) }}
+                    <i class="fas fa-shopping-cart text-xl"></i>
+
+                    <span id="cart-count"
+                        class="absolute -top-2 -right-2 w-5 h-5 flex items-center justify-center 
+                            text-[10px] bg-red-500 text-white rounded-full
+                            {{ $cart_count > 0 ? '' : 'hidden' }}">
+                        {{ $cart_count }}
                     </span>
                 </a>
+
+
 
                 <!-- Language selector -->
                 <select class="text-sm border rounded px-2 py-1 focus:ring-2 focus:ring-cyan-500">
