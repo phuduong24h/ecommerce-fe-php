@@ -1,151 +1,82 @@
 import './bootstrap';
 
-/**
- * Hàm này chịu trách nhiệm gọi API và hiển thị sản phẩm ra màn hình
- * @param {string} searchTerm - Từ khóa tìm kiếm (mặc định là chuỗi rỗng)
- */
-function loadProducts(searchTerm = '') {
-    // Lấy container sản phẩm
-    const productContainer = document.querySelector('.home-product .grid__row');
+document.addEventListener('DOMContentLoaded', () => {
 
-    if (!productContainer) {
-        console.error('Không tìm thấy container .home-product .grid__row');
-        return;
+    // Lấy các biến toàn cục đã "nhúng" từ Blade
+    const { cartAddUrl, isLoggedIn, loginUrl } = window.myApp;
+    const cartCountBadge = document.getElementById('cart-count-badge');
+    const allAddToCartButtons = document.querySelectorAll('.add-to-cart-btn');
+
+    // Hàm cập nhật số đếm trên icon
+    function updateCartIconCount(newCount) {
+        if (cartCountBadge) {
+            cartCountBadge.textContent = newCount;
+        }
     }
 
-    // ✅ FIX 1: Sửa URL API cho khớp với backend (bỏ /user)
-    // Backend: router.get("/") → /api/products
-    let apiUrl = 'http://localhost:3000/api/v1/products';
+    // Gán sự kiện click cho tất cả các nút "Thêm vào Giỏ"
+    allAddToCartButtons.forEach(button => {
+        button.addEventListener('click', async function(event) {
+            event.preventDefault();
 
-    // ✅ FIX 2: Backend dùng query param là "search", không phải "keyword"
-    const params = new URLSearchParams();
-    if (searchTerm) {
-        params.append('search', searchTerm);
-    }
-    // Thêm page và pageSize mặc định
-    params.append('page', '1');
-    params.append('pageSize', '100'); // Lấy nhiều sản phẩm hơn
-
-    if (params.toString()) {
-        apiUrl += `?${params.toString()}`;
-    }
-
-    console.log('🔗 API URL:', apiUrl);
-
-    // Hiển thị "Đang tải..."
-    productContainer.innerHTML = '<p style="padding: 20px; text-align: center;">Đang tải sản phẩm...</p>';
-
-    fetch(apiUrl)
-        .then(response => {
-            if (!response.ok) {
-                throw new Error(`HTTP error! status: ${response.status}`);
-            }
-            return response.json();
-        })
-        .then(responseData => {
-            console.log('📦 Response:', responseData);
-
-            // ✅ FIX 3: Backend trả về responseSuccess({ data: { products, total, ... } })
-            // Nên cấu trúc là: responseData.data.products
-            const productsData = responseData.data;
-
-            if (!productsData || !productsData.products) {
-                productContainer.innerHTML = '<p style="padding: 20px; text-align: center;">Không có dữ liệu sản phẩm</p>';
+            // 1. Kiểm tra đăng nhập (phía client)
+            if (!isLoggedIn) {
+                window.location.href = loginUrl;
                 return;
             }
 
-            const products = productsData.products;
-            console.log(`✅ Loaded ${products.length} products`);
+            // 2. Thay đổi trạng thái nút
+            this.disabled = true;
+            this.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Đang thêm...';
 
-            // Xóa nội dung "Đang tải..."
-            productContainer.innerHTML = '';
+            // 3. Lấy dữ liệu sản phẩm từ nút
+            const productData = JSON.parse(this.dataset.productJson);
 
-            if (products.length === 0) {
-                if(searchTerm) {
-                    productContainer.innerHTML = `<p style="padding: 20px; text-align: center;">Không tìm thấy sản phẩm nào với từ khóa "${searchTerm}".</p>`;
+            try {
+                // 4. Gọi đến CartController (POST /cart/add)
+                const response = await fetch(cartAddUrl, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Accept': 'application/json',
+                        // Gửi token CSRF của Laravel
+                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+                    },
+                    body: JSON.stringify({
+                        product_json: productData // Gửi toàn bộ object sản phẩm
+                    })
+                });
+
+                const result = await response.json();
+
+                if (!response.ok) {
+                    // Nếu là lỗi 401 (chưa auth), Controller sẽ trả về 'redirect'
+                    if (response.status === 401 && result.redirect) {
+                        window.location.href = result.redirect;
+                    }
+                    // Lỗi khác
+                    throw new Error(result.message || 'Lỗi không xác định');
+                }
+
+                // 5. Thành công! Cập nhật số đếm
+                if (result.success) {
+                    updateCartIconCount(result.newCartCount);
+
+                    // Cập nhật UI nút bấm
+                    this.innerHTML = '<i class="home-product-item__cart fa-solid fa-check"></i> Đã thêm!';
+                    setTimeout(() => {
+                        this.disabled = false;
+                        this.innerHTML = '<i class="home-product-item__cart fa-solid fa-cart-shopping"></i> Thêm vào Giỏ';
+                    }, 1500);
                 } else {
-                    productContainer.innerHTML = '<p style="padding: 20px; text-align: center;">Chưa có sản phẩm nào.</p>';
+                    throw new Error(result.message || 'Lỗi khi thêm vào giỏ hàng');
                 }
-                return;
+
+            } catch (error) {
+                console.error('Lỗi khi thêm vào giỏ hàng:', error);
+                this.disabled = false;
+                this.innerHTML = 'Lỗi! Thử lại';
             }
-
-            // Lặp và hiển thị sản phẩm
-            products.forEach(product => {
-                let imageUrl = 'https://via.placeholder.com/300?text=No+Image';
-
-                if (product.image) {
-                    imageUrl = product.image;
-                } else if (product.images && product.images.length > 0) {
-                    const firstImage = product.images[0];
-                    imageUrl = (typeof firstImage === 'object' && firstImage.url) ? firstImage.url : firstImage;
-                }
-
-                const productHtml = `
-                    <div class="grid__column-4">
-                        <div class="home-product-item">
-                            <div class="home-product-item__img" style="background-image: url(${imageUrl});"></div>
-                            <div class="home-product-item__body">
-                                <div class="home-product-name__wrap">
-                                    <h4 class="home-product-item__name">${product.name || 'N/A'}</h4>
-                                    <span class="home-product-item__tag">${product.categoryName || 'New'}</span>
-                                </div>
-                                <div class="home-product-item__rating">
-                                    <i class="fa-solid fa-star"></i>
-                                    <span>(${product.rating || '0'})</span>
-                                </div>
-                                <p class="home-product-item__category">${product.categoryId || 'N/A'}</p>
-                                <div class="home-product-item__footer">
-                                    <span class="home-product-item__price">$${product.price || '0'}</span>
-                                    <span class="home-product-item__stock">${product.stock > 0 ? 'Còn Hàng' : 'Hết Hàng'}</span>
-                                </div>
-                                <button class="home-product-item__button btn_css btn--primary_css">
-                                    <i class="home-product-item__cart fa-solid fa-cart-shopping"></i>
-                                    Thêm vào Giỏ
-                                </button>
-                            </div>
-                        </div>
-                    </div>
-                `;
-
-                productContainer.insertAdjacentHTML('beforeend', productHtml);
-            });
-        })
-        .catch(error => {
-            console.error('❌ Lỗi khi tải sản phẩm:', error);
-            productContainer.innerHTML = '<p style="padding: 20px; text-align: center;">Không thể tải sản phẩm. Vui lòng kiểm tra backend.</p>';
         });
-}
-
-// ==========================================================
-// SỰ KIỆN CHÍNH
-// ==========================================================
-document.addEventListener('DOMContentLoaded', function() {
-
-    // 1. Tải tất cả sản phẩm ngay khi trang được mở
-    loadProducts();
-
-    // 2. Lắng nghe sự kiện gõ phím trên ô tìm kiếm
-    const searchInput = document.querySelector('.header__search-input');
-
-    if (searchInput) {
-        // ✅ FIX 4: Thêm debounce để tránh gọi API quá nhiều lần
-        let debounceTimer;
-
-        searchInput.addEventListener('keyup', function(event) {
-            // Xóa timer cũ
-            clearTimeout(debounceTimer);
-
-            // Đợi 500ms sau khi người dùng ngừng gõ mới gọi API
-            debounceTimer = setTimeout(() => {
-                const searchTerm = event.target.value.trim();
-                console.log('🔍 Searching for:', searchTerm);
-                loadProducts(searchTerm);
-            }, 500);
-        });
-    } else {
-        console.warn('⚠️ Không tìm thấy input search .header__search-input');
-    }
+    });
 });
-
-// ✅ FIX 5: Export hàm loadProducts để có thể gọi từ inline script trong blade
-window.loadProducts = loadProducts;
