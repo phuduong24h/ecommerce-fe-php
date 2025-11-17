@@ -61,11 +61,13 @@
 
             <!-- RIGHT: User, Cart, Language, Admin/Customer -->
             <div class="flex items-center space-x-3">
-                <!-- User icon -->
-                <a href="#" class="text-gray-700 hover:text-cyan-600">
+                <!-- User icon - Link to Account -->
+                <a href="{{ route('account.index') }}" 
+                   class="text-gray-700 hover:text-cyan-600 transition-colors {{ request()->is('account*') ? 'text-cyan-600' : '' }}">
                     <i class="fas fa-user"></i>
                 </a>
 
+                <!-- Cart -->
                 <!-- Cart -->
                 <a href="/cart" class="relative text-gray-700 hover:text-cyan-600">
                     <i class="fas fa-shopping-cart text-xl"></i>
@@ -81,6 +83,11 @@
                             text-[10px] bg-red-500 text-white rounded-full
                             {{ $cartTotal > 0 ? '' : 'hidden' }}">
                         {{ $cartTotal }}
+                    <span id="cart-count"
+                        class="absolute -top-2 -right-2 w-5 h-5 flex items-center justify-center 
+                            text-[10px] bg-red-500 text-white rounded-full
+                            {{ $cart_count > 0 ? '' : 'hidden' }}">
+                        {{ $cart_count }}
                     </span>
                 </a>
 
