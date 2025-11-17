@@ -9,13 +9,22 @@ use App\Http\Controllers\Admin\WarrantyClaimController;
 use App\Http\Controllers\Admin\UserController;
 use App\Http\Controllers\Admin\SettingController;
 use App\Http\Controllers\Admin\WarrantyPolicyController;
+
 use App\Http\Controllers\User\CartController;
 use App\Http\Controllers\User\AccountController;
 
-// Cart Routes
-Route::get('/cart', [CartController::class, 'index'])->name('cart.index');
-Route::post('/cart/update', [CartController::class, 'update'])->name('cart.update');
-Route::post('/cart/remove', [CartController::class, 'remove'])->name('cart.remove');
+
+
+use App\Http\Controllers\User\LoginController;
+use App\Http\Controllers\User\InterfaceController;
+use App\Http\Controllers\User\AddCartController; // <-- THÊM DÒNG NÀY
+
+
+// ========================================
+// 1. ROUTE TRANG CHỦ (GIAO DIỆN CHÍNH)
+// ========================================
+Route::get('/', [InterfaceController::class, 'index'])->name('home');
+// ***********************************************
 
 // ========================================
 // 1. ADMIN ROUTES (GIAO DIỆN)
@@ -93,6 +102,15 @@ Route::prefix('admin')->name('admin.')->group(function () {
     //     ->name('reports.sales')
     //     ->where('year', '[0-9]{4}');
 });
+
+// ========================================
+// 2. AUTH ROUTES (CUSTOMER LOGIN/REGISTER)
+// ========================================
+Route::get('/login', [LoginController::class, 'showLoginForm'])->name('login');
+Route::post('/login', [LoginController::class, 'login']);
+Route::post('/register', [LoginController::class, 'register'])->name('register');
+Route::get('/logout', [LoginController::class, 'logout'])->name('logout');
+Route::post('/cart/add', [AddCartController::class, 'add'])->name('cart.add');
 
 // ========================================
 // 2. API PROXY - /api/v1/admin/... → Node.js (localhost:3000)
