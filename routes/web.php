@@ -14,7 +14,7 @@ use App\Http\Controllers\User\InterfaceController;
 
 
 use App\Http\Controllers\User\LoginController;
-use App\Http\Controllers\User\CartController; // <-- THÊM DÒNG NÀY
+use App\Http\Controllers\User\AddCartController; // <-- THÊM DÒNG NÀY
 
 
 // ========================================
@@ -107,7 +107,7 @@ Route::get('/login', [LoginController::class, 'showLoginForm'])->name('login');
 Route::post('/login', [LoginController::class, 'login']);
 Route::post('/register', [LoginController::class, 'register'])->name('register');
 Route::get('/logout', [LoginController::class, 'logout'])->name('logout');
-Route::post('/cart/add', [CartController::class, 'add'])->name('cart.add');
+Route::post('/cart/add', [AddCartController::class, 'add'])->name('cart.add');
 
 // ========================================
 // 2. API PROXY - /api/v1/admin/... → Node.js (localhost:3000)

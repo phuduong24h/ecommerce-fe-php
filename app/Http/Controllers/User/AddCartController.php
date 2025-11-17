@@ -3,17 +3,17 @@
 namespace App\Http\Controllers\User;
 
 use App\Http\Controllers\Controller;
-use App\Services\CartService;
+use App\Services\AddCartService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
 
-class CartController extends Controller
+class AddCartController extends Controller
 {
-    protected $cartService;
+    protected $addCartService;
 
-    public function __construct(CartService $cartService)
+    public function __construct(AddCartService $addCartService)
     {
-        $this->cartService = $cartService;
+        $this->addCartService = $addCartService;
     }
 
     /**
@@ -87,7 +87,7 @@ class CartController extends Controller
             }
 
             // 5. Đồng bộ giỏ hàng mới lên backend
-            $result = $this->cartService->updateCart($cartArray);
+            $result = $this->addCartService->updateCart($cartArray);
 
             if (!$result['success']) {
                 return response()->json($result, 500);

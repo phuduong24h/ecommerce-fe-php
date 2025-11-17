@@ -7,7 +7,7 @@
     <meta name="csrf-token" content="{{ csrf_token() }}">
     <title>@yield('title', 'Bảng điều khiển')</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    @vite(['resources/css/styles.css', 'resources/js/app.js'])
+    @vite(['resources/css/styles.css', 'resources/js/AddCart.js'])
     @stack('styles')
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
     <script>
@@ -69,9 +69,9 @@
                 <!-- Cart -->
                 <a href="/cart" class="relative text-gray-700 hover:text-cyan-600">
                     <i class="fas fa-shopping-cart"></i>
-                    <span id="cart-count-badge" class="absolute -top-1 -right-1 text-xs bg-red-500 text-white rounded-full px-1">
+                    {{-- <span id="cart-count-badge" class="absolute -top-1 -right-1 text-xs bg-red-500 text-white rounded-full px-1">
                         {{ count(session('user.cart', [])) }}
-                    </span>
+                    </span> --}}
                 </a>
 
                 <!-- Language selector -->
