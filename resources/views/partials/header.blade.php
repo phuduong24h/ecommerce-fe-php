@@ -69,7 +69,21 @@
                 <!-- Cart -->
                 <a href="/cart" class="relative text-gray-700 hover:text-cyan-600">
                     <i class="fas fa-shopping-cart text-xl"></i>
+
+                    @php
+                        // Nếu controller truyền $cart_count thì dùng
+                        // Nếu không có thì fallback lấy từ session
+                        $cartTotal = $cart_count ?? count(session('user.cart', []));
+                    @endphp
+
+                    <span id="cart-count"
+                        class="absolute -top-2 -right-2 w-5 h-5 flex items-center justify-center
+                            text-[10px] bg-red-500 text-white rounded-full
+                            {{ $cartTotal > 0 ? '' : 'hidden' }}">
+                        {{ $cartTotal }}
+                    </span>
                 </a>
+
 
                 <!-- Language selector -->
                 <select class="text-sm border rounded px-2 py-1 focus:ring-2 focus:ring-cyan-500">
