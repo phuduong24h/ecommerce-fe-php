@@ -10,10 +10,10 @@ use App\Http\Controllers\Admin\UserController;
 use App\Http\Controllers\Admin\SettingController;
 use App\Http\Controllers\Admin\WarrantyPolicyController;
 
-use App\Http\Controllers\User\InterfaceController;
 
 
 use App\Http\Controllers\User\LoginController;
+use App\Http\Controllers\User\InterfaceController;
 use App\Http\Controllers\User\AddCartController; // <-- THÊM DÒNG NÀY
 
 

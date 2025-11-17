@@ -68,10 +68,7 @@
 
                 <!-- Cart -->
                 <a href="/cart" class="relative text-gray-700 hover:text-cyan-600">
-                    <i class="fas fa-shopping-cart"></i>
-                    {{-- <span id="cart-count-badge" class="absolute -top-1 -right-1 text-xs bg-red-500 text-white rounded-full px-1">
-                        {{ count(session('user.cart', [])) }}
-                    </span> --}}
+                    <i class="fas fa-shopping-cart text-xl"></i>
                 </a>
 
                 <!-- Language selector -->
