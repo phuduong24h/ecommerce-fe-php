@@ -66,7 +66,7 @@
                     </strong>
                 </div>
 
-                <a href="#" class="btn btn-info text-white w-100 fw-bold">
+                <a href="{{ route('checkout') }}" class="btn btn-info text-white w-100 fw-bold">
                     Tiến Hành Thanh Toán
                 </a>
             </div>

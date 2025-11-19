@@ -12,6 +12,7 @@ use App\Http\Controllers\Admin\WarrantyPolicyController;
 
 use App\Http\Controllers\User\CartController;
 use App\Http\Controllers\User\AccountController;
+use App\Http\Controllers\User\CheckoutController;
 
 
 
@@ -145,3 +146,7 @@ Route::prefix('account')->name('account.')->group(function () {
     Route::get('/warranty', [AccountController::class, 'warranty'])->name('warranty');
     Route::get('/profile', [AccountController::class, 'profile'])->name('profile');
 });
+
+//checkout routes
+Route::get('/checkout', [CheckoutController::class, 'index'])->name('checkout');
+Route::post('/checkout/submit', [CheckoutController::class, 'submit']);
