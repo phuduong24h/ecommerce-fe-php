@@ -36,7 +36,7 @@ return [
     ],
     'api' => [
         'url' => env('API_URL', 'http://localhost:3000'),
-        'token' => env('API_TOKEN', ''),
+        
     ],
 
 ];
