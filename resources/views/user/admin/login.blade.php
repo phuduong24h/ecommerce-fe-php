@@ -26,7 +26,7 @@
             </div>
 
             <h1 class="text-3xl font-extrabold text-white mt-5 tracking-wide drop-shadow-lg">
-                Admin Portal
+                Admin
             </h1>
 
             <p class="text-white/80 mt-1 text-sm">
@@ -70,7 +70,8 @@
                     <input type="checkbox" class="w-4 h-4">
                     Ghi nhớ tôi
                 </label>
-                <a href="#" class="hover:text-white hover:underline">Quên mật khẩu?</a>
+                <a href="{{ route('admin.forgot') }}" class="hover:text-white hover:underline">Quên mật khẩu?</a>
+
             </div>
 
             <button 
@@ -80,20 +81,8 @@
             </button>
         </form>
 
-        <!-- OR line -->
-        <div class="mt-6 flex items-center gap-3">
-            <div class="h-[1px] bg-white/40 flex-1"></div>
-            <span class="text-white/80 text-sm">Hoặc</span>
-            <div class="h-[1px] bg-white/40 flex-1"></div>
-        </div>
-
-        <!-- Google Login -->
-        <button class="w-full mt-4 bg-white text-gray-800 py-3 rounded-xl shadow-lg 
-                       flex items-center justify-center gap-3 hover:bg-gray-100 transition">
-            <img src="https://www.svgrepo.com/show/475656/google-color.svg" class="w-6 h-6">
-            <span>Đăng nhập bằng Google</span>
-        </button>
-
+       
+        
     </div>
 
     <script src="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/js/all.min.js"></script>

@@ -1,0 +1,107 @@
+
+<?php
+
+namespace App\Http\Controllers\User;
+
+use App\Http\Controllers\Controller;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Http;
+
+class WarrantyController extends Controller
+{
+    // =====================================
+    //  TRANG BẢO HÀNH + LẤY LỊCH SỬ TỪ NODE
+    // =====================================
+    public function index()
+    {
+        $claims = [];
+
+        // Nếu có token thì gọi API Node để lấy lịch sử bảo hành
+        if (session('node_token')) {
+
+            $res = Http::withToken(session('node_token'))
+                ->get("http://localhost:3000/api/v1/warranty/me");
+
+            if ($res->ok()) {
+                $claims = $res->json()['data'];
+            }
+        }
+
+        return view('user.warranty.warranty', compact('claims'));
+    }
+
+
+
+    // =====================================
+    //  KIỂM TRA SERIAL
+    // =====================================
+    public function checkSerial(Request $request)
+    {
+        $request->validate([
+            'serial_number' => 'required'
+        ]);
+
+        $token = session('node_token');
+
+        if (!$token) {
+            return back()->withErrors([
+                'msg' => 'Bạn chưa đăng nhập!'
+            ])->withInput();
+        }
+
+        $res = Http::withToken($token)
+            ->post("http://localhost:3000/api/v1/warranty/check", [
+                "serial" => $request->serial_number
+            ]);
+
+        if ($res->failed()) {
+            return back()
+                ->withErrors(['msg' => 'Không tìm thấy serial!'])
+                ->withInput();
+        }
+
+        return back()->with('checkResult', $res->json());
+    }
+
+
+
+    // =====================================
+    //  GỬI YÊU CẦU BẢO HÀNH
+    // =====================================
+    public function submitClaim(Request $request)
+    {
+        $request->validate([
+            'serial_number' => 'required',
+            'description'   => 'required'
+        ]);
+
+        $token = session('node_token');
+
+        if (!$token) {
+            return back()->withErrors([
+                'msg' => 'Bạn chưa đăng nhập!'
+            ])->withInput();
+        }
+
+        $payload = [
+            "orderId"       => null,
+            "productId"     => null,
+            "productName"   => null,
+            "issueDesc"     => $request->description,
+            "images"        => [],
+            "purchasedAt"   => null,
+            "productSerial" => $request->serial_number
+        ];
+
+        $res = Http::withToken($token)
+            ->post("http://localhost:3000/api/v1/warranty/claim", $payload);
+
+        if ($res->failed()) {
+            return back()->withErrors([
+                'msg' => 'Gửi yêu cầu thất bại!'
+            ]);
+        }
+
+        return back()->with('success', 'Gửi yêu cầu bảo hành thành công!');
+    }
+}
