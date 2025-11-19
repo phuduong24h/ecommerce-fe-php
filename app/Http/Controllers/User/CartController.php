@@ -104,4 +104,70 @@ class CartController extends Controller
             'cart_count' => count($updatedCart)
         ]);
     }
+        public function checkout()
+    {
+        // lấy lại giỏ hàng
+        $res = $this->api->get("cart");
+        $cart = $res['data'] ?? [];
+
+        if (empty($cart)) {
+            return redirect('/cart')->with('error', 'Giỏ hàng trống!');
+        }
+
+        $subtotal = collect($cart)->sum(fn($i) => $i['price'] * $i['quantity']);
+
+        return view('user.checkout.index', [
+            'cart' => $cart,
+            'subtotal' => $subtotal
+        ]);
+    }
+
+    public function submitOrder(Request $request)
+    {
+        $address = $request->address;
+
+        // lấy cart
+        $res = $this->api->get("cart");
+        $cart = $res['data'] ?? [];
+
+        if (empty($cart)) {
+            return redirect('/cart')->with('error', 'Giỏ hàng trống!');
+        }
+
+        // chuẩn bị payload
+        $payload = [
+            "items" => array_map(function ($i) {
+                return [
+                    "productId" => $i['productId'],
+                    "name"      => $i['name'],
+                    "quantity"  => $i['quantity'],
+                    "price"     => $i['price']
+                ];
+            }, $cart),
+
+            "payment" => [
+                "method" => "CASH",
+                "status" => "PENDING",
+                "amount" => array_sum(array_map(fn($i) => $i['price'] * $i['quantity'], $cart))
+            ],
+
+            "shipment" => [
+                "address" => $address,
+                "status" => "PENDING"
+            ],
+
+            "totalAmount" =>
+                array_sum(array_map(fn($i) => $i['price'] * $i['quantity'], $cart)) + 9.6
+        ];
+
+        // gọi NodeJS tạo đơn hàng
+        $res2 = $this->api->post("orders", $payload);
+
+        if (!($res2['success'] ?? false)) {
+            return back()->with('error', 'Không thể tạo đơn hàng');
+        }
+
+        return redirect()->route('account.orders')->with('success', 'Thanh toán thành công!');
+    }
+
 }
