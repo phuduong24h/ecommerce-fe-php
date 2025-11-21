@@ -20,6 +20,9 @@ use App\Http\Controllers\User\LoginController;
 use App\Http\Controllers\User\InterfaceController;
 use App\Http\Controllers\User\AddCartController; // <-- THÊM DÒNG NÀY
 
+use App\Http\Controllers\User\ProductDetailController;
+
+use App\Http\Controllers\User\WarrantyController; //bao hanh cua hải
 
 // ========================================
 // 1. ROUTE TRANG CHỦ (GIAO DIỆN CHÍNH)
@@ -97,11 +100,6 @@ Route::prefix('admin')->name('admin.')->group(function () {
         Route::get('logs', [SettingController::class, 'index'])->name('logs.index'); // danh sách logs,
         Route::delete('logs/{id}', [SettingController::class, 'deleteLog'])->name('logs.destroy'); // xóa log,
     });
-
-
-    // Route::get('/reports/sales/{year?}', [DashboardController::class, 'salesReport'])
-    //     ->name('reports.sales')
-    //     ->where('year', '[0-9]{4}');
 });
 
 // ========================================
@@ -154,3 +152,21 @@ Route::post('/checkout/submit', [CheckoutController::class, 'submit']);
 Route::get('/cart', [CartController::class, 'index'])->name('cart.index');
 Route::post('/cart/update', [CartController::class, 'update'])->name('cart.update');
 Route::post('/cart/remove', [CartController::class, 'remove'])->name('cart.remove');
+
+Route::get('/product/{id}', [ProductDetailController::class, 'show'])->name('product.detail');
+
+//kiem tra bao hanh
+Route::prefix('warranty')->group(function () {
+    Route::get('/', [WarrantyController::class, 'index'])->name('warranty.index');
+    Route::post('/check', [WarrantyController::class, 'checkSerial'])->name('warranty.check');
+    Route::post('/claim', [WarrantyController::class, 'submitClaim'])->name('warranty.claim');
+
+    // AJAX
+    Route::post(
+        '/ajax-serial',
+        [WarrantyController::class, 'ajaxGetProductBySerial']
+    )->name('warranty.ajax.serial');
+});
+
+require __DIR__ . '/admin_auth.php';
+

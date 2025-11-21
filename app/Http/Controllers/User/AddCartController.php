@@ -4,108 +4,101 @@ namespace App\Http\Controllers\User;
 
 use App\Http\Controllers\Controller;
 use App\Services\AddCartService;
+use App\Services\ApiClientService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
 
 class AddCartController extends Controller
 {
     protected $addCartService;
+    protected $api;
 
-    public function __construct(AddCartService $addCartService)
+    public function __construct(AddCartService $addCartService, ApiClientService $api)
     {
         $this->addCartService = $addCartService;
+        $this->api = $api;
     }
 
-    /**
-     * API Endpoint cho AJAX để thêm sản phẩm vào giỏ
-     * Route: POST /cart/add
-     */
     public function add(Request $request)
     {
-        // 1. Kiểm tra xem user đã đăng nhập chưa
-        if (!session('user_token')) {
+        // 1. Kiểm tra đăng nhập
+        if (!session('user')) {
             return response()->json([
                 'success' => false,
-                'message' => 'Bạn cần đăng nhập để thêm vào giỏ hàng.',
-                'redirect' => route('login') // Báo cho JS chuyển hướng
+                'message' => 'Bạn cần đăng nhập để mua hàng',
+                'redirect' => route('login')
             ], 401);
         }
 
-        // 2. Lấy thông tin sản phẩm từ request
+        // 2. Lấy dữ liệu sản phẩm
         $product = $request->input('product_json');
+        Log::info('AddCart Request:', ['product' => $product]);
+
         if (!$product) {
-            return response()->json(['success' => false, 'message' => 'Thiếu thông tin sản phẩm.'], 400);
+            return response()->json(['success' => false, 'message' => 'Dữ liệu sản phẩm lỗi'], 400);
         }
 
         try {
-            // 3. Lấy giỏ hàng hiện tại từ session (cho nhanh) hoặc từ API
-            // Lấy từ session mà ta đã lưu khi đăng nhập
-            $cartArray = session('user.cart', []);
+            // 3. LẤY GIỎ HÀNG TỪ API (THAY VÌ SESSION)
+            $cartResponse = $this->api->get("cart");
+            $cart = $cartResponse['data'] ?? [];
 
-            $productId = $product['id'] ?? $product['_id'];
-            $existingItemIndex = -1;
-            foreach ($cartArray as $index => $item) {
-                if ($item['productId'] == $productId) {
-                    $existingItemIndex = $index;
+            $id = $product['id'] ?? $product['_id'];
+            $found = false;
+
+            // Tìm xem có trong giỏ chưa
+            foreach ($cart as &$item) {
+                if ($item['productId'] == $id) {
+                    $item['quantity'] += 1;
+                    $found = true;
                     break;
                 }
             }
 
-            // 4. Logic thêm/cập nhật giỏ hàng
-            if ($existingItemIndex > -1) {
-                // Sản phẩm đã có, tăng số lượng
-                $cartArray[$existingItemIndex]['quantity'] += 1;
-            } else {
-                $imageUrl = 'default.jpg'; // Ảnh mặc định
+            // Nếu chưa có, thêm mới
+            if (!$found) {
+                // Xử lý ảnh
+                $img = 'https://via.placeholder.com/150';
+                if (!empty($product['images'][0])) {
+                    $img = is_array($product['images'][0]) ? $product['images'][0]['url'] : $product['images'][0];
+                } elseif (!empty($product['image'])) {
+                    $img = $product['image'];
+                }
 
-                // 1. Thử lấy 'HinhAnh' (key cũ)
-                if (!empty($product['HinhAnh'])) {
-                    $imageUrl = $product['HinhAnh'];
-                }
-                // 2. Thử lấy 'image' (key trong app.js)
-                elseif (!empty($product['image'])) {
-                    $imageUrl = $product['image'];
-                }
-                // 3. Thử lấy mảng 'images' (key trong app.js)
-                elseif (!empty($product['images']) && is_array($product['images']) && count($product['images']) > 0) {
-                    $firstImage = $product['images'][0];
-                    if (is_array($firstImage) && !empty($firstImage['url'])) {
-                        $imageUrl = $firstImage['url']; // Dạng [{ "url": "..." }]
-                    } elseif (is_string($firstImage)) {
-                        $imageUrl = $firstImage; // Dạng ["...", "..."]
-                    }
-                }
-                // === KẾT THÚC SỬA LỖI ===
-
-                $cartArray[] = [
-                    'productId' => $productId,
+                $cart[] = [
+                    'productId' => $id,
+                    'name' => $product['name'] ?? $product['TenSP'] ?? 'Sản phẩm',
+                    'price' => $product['price'] ?? $product['GiaBan'] ?? 0,
                     'quantity' => 1,
-                    'name' => $product['TenSP'] ?? $product['name'] ?? 'Sản phẩm',
-                    'price' => $product['GiaBan'] ?? $product['price'] ?? 0,
-                    'image' => $imageUrl // <-- ĐÃ SỬA LẠI ĐÚNG
+                    'image' => $img,
+                    'variant' => null
                 ];
             }
 
-            // 5. Đồng bộ giỏ hàng mới lên backend
-            $result = $this->addCartService->updateCart($cartArray);
+            // 4. ĐẨY GIỎ HÀNG LÊN API (QUAN TRỌNG NHẤT)
+            $updateResponse = $this->addCartService->updateCart($cart);
 
-            if (!$result['success']) {
-                return response()->json($result, 500);
+            if (!($updateResponse['success'] ?? false)) {
+                throw new \Exception($updateResponse['message'] ?? 'Không thể cập nhật giỏ hàng');
             }
 
-            // 6. Lưu giỏ hàng mới vào session
-            $updatedCart = $result['data'];
-            session(['user.cart' => $updatedCart]);
+            // 5. ĐỒNG BỘ LẠI SESSION TỪ API (để header cập nhật)
+            session(['user.cart' => $cart]);
+            session()->save();
+            Log::info('Cart Updated via API:', ['count' => count($cart)]);
 
-            // 7. Trả về số lượng mới cho JS
             return response()->json([
                 'success' => true,
-                'newCartCount' => count($updatedCart)
+                'newCartCount' => count($cart),
+                'message' => 'Đã thêm vào giỏ hàng'
             ]);
 
         } catch (\Exception $e) {
-            Log::error('Cart Add Error: ' . $e->getMessage());
-            return response()->json(['success' => false, 'message' => 'Lỗi hệ thống khi thêm giỏ hàng.'], 500);
+            Log::error('Cart Error: ' . $e->getMessage());
+            return response()->json([
+                'success' => false,
+                'message' => 'Lỗi: ' . $e->getMessage()
+            ], 500);
         }
     }
 }

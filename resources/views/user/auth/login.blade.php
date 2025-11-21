@@ -168,12 +168,12 @@
         }
 
         // Kiểm tra xem có cần active tab register không (khi
-        // submit lỗi từ form register)
+        // submit lỗi từ form register)   
         @if(session('tab') == 'register' || $errors->has('name') || $errors->has('phone') || $errors->has('password_confirmation'))
             showTab('register');
         @else
             showTab('login');
-        @endif
+        @endif        
     </script>
 </body>
 </html>

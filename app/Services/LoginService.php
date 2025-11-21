@@ -11,15 +11,9 @@ class LoginService
 
     public function __construct()
     {
-        $this->authBaseUrl = config('services.api.url', 'http://localhost:3000') . '/api/v1/auth'; // <-- THÊM DÒNG NÀY
+        $this->authBaseUrl = config('services.api.url', 'http://localhost:3000') . '/auth';
     }
-    /**
-     * Gọi API đăng nhập
-     *
-     * @param string $email
-     * @param string $password
-     * @return array
-     */
+
     public function login($email, $password)
     {
         try {
@@ -31,13 +25,18 @@ class LoginService
             $json = $response->json();
 
             if ($response->failed() || is_null($json) || !$json['success']) {
-                $message = $json['error']['message'] ?? 'INVALID_CREDENTIALS';
-                if ($message === 'INVALID_CREDENTIALS') $message = 'Sai email hoặc mật khẩu';
+
+                // Backend trả message trực tiếp
+                $message = $json['message'] ?? 'INVALID_CREDENTIALS';
+
+                // Tùy chỉnh câu thông báo
+                if ($message === 'INVALID_CREDENTIALS') {
+                    $message = 'Sai email hoặc mật khẩu';
+                }
 
                 return ['success' => false, 'message' => $message];
             }
 
-            // { success: true, data: { token, user } }
             return [
                 'success' => true,
                 'data' => $json['data']
@@ -49,12 +48,6 @@ class LoginService
         }
     }
 
-    /**
-     * Gọi API đăng ký
-     *
-     * @param array $details - ['name', 'email', 'phone', 'password']
-     * @return array
-     */
     public function register(array $details)
     {
         try {
@@ -62,11 +55,13 @@ class LoginService
             $json = $response->json();
 
             if ($response->failed() || is_null($json) || !$json['success']) {
-                $message = $json['error']['message'] ?? 'REGISTER_FAILED';
+
+                // Backend cũng trả message trực tiếp
+                $message = $json['message'] ?? 'REGISTER_FAILED';
+
                 return ['success' => false, 'message' => $message];
             }
 
-            // { success: true, data: { ...user } }
             return [
                 'success' => true,
                 'data' => $json['data']
