@@ -35,8 +35,14 @@ return [
         ],
     ],
     'api' => [
+        // Base URL for the external Node.js API (or other backend). Set in .env as API_URL
         'url' => env('API_URL', 'http://localhost:3000'),
+        // Bearer token for API authentication. Set in .env as API_TOKEN
         'token' => env('API_TOKEN', ''),
+        // Timeout (seconds) for HTTP client requests
+        'timeout' => env('API_TIMEOUT', 30),
+        // Verify SSL certificates (true/false). Useful for local dev with self-signed certs.
+        'verify' => env('API_VERIFY', true),
     ],
 
 ];

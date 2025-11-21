@@ -9,13 +9,23 @@ use App\Http\Controllers\Admin\WarrantyClaimController;
 use App\Http\Controllers\Admin\UserController;
 use App\Http\Controllers\Admin\SettingController;
 use App\Http\Controllers\Admin\WarrantyPolicyController;
-use App\Http\Controllers\Cart\CartController;
+
+use App\Http\Controllers\User\CartController;
+use App\Http\Controllers\User\AccountController;
+use App\Http\Controllers\User\CheckoutController;
 
 
-// Cart Routes
-Route::get('/cart', [CartController::class, 'index'])->name('cart.index');
-Route::post('/cart/update', [CartController::class, 'update'])->name('cart.update');
-Route::post('/cart/remove', [CartController::class, 'remove'])->name('cart.remove');
+
+use App\Http\Controllers\User\LoginController;
+use App\Http\Controllers\User\InterfaceController;
+use App\Http\Controllers\User\AddCartController; // <-- THÊM DÒNG NÀY
+
+
+// ========================================
+// 1. ROUTE TRANG CHỦ (GIAO DIỆN CHÍNH)
+// ========================================
+Route::get('/', [InterfaceController::class, 'index'])->name('home');
+// ***********************************************
 
 // ========================================
 // 1. ADMIN ROUTES (GIAO DIỆN)
@@ -95,6 +105,15 @@ Route::prefix('admin')->name('admin.')->group(function () {
 });
 
 // ========================================
+// 2. AUTH ROUTES (CUSTOMER LOGIN/REGISTER)
+// ========================================
+Route::get('/login', [LoginController::class, 'showLoginForm'])->name('login');
+Route::post('/login', [LoginController::class, 'login']);
+Route::post('/register', [LoginController::class, 'register'])->name('register');
+Route::get('/logout', [LoginController::class, 'logout'])->name('logout');
+Route::post('/cart/add', [AddCartController::class, 'add'])->name('cart.add');
+
+// ========================================
 // 2. API PROXY - /api/v1/admin/... → Node.js (localhost:3000)
 // ========================================
 // routes/web.php → phần API PROXY
@@ -118,4 +137,16 @@ Route::prefix('api')->group(function () {
             ->withHeaders($response->headers());
     })->where('any', '.*');
 });
+// routes/web.php
 
+// Account Routes
+Route::prefix('account')->name('account.')->group(function () {
+    Route::get('/', [AccountController::class, 'index'])->name('index');
+    Route::get('/orders', [AccountController::class, 'orders'])->name('orders');
+    Route::get('/warranty', [AccountController::class, 'warranty'])->name('warranty');
+    Route::get('/profile', [AccountController::class, 'profile'])->name('profile');
+});
+
+//checkout routes
+Route::get('/checkout', [CheckoutController::class, 'index'])->name('checkout');
+Route::post('/checkout/submit', [CheckoutController::class, 'submit']);
