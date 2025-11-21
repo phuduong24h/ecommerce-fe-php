@@ -36,7 +36,7 @@ class ProductController extends Controller
         $categories = $this->categoryService->getAllCategories();
 
         // --- Phân trang thủ công ---
-        $perPage = 5; // số sản phẩm / trang
+        $perPage = 10; // số sản phẩm / trang
         $page = $request->get('page', 1); // trang hiện tại
 
         $paginatedProducts = new \Illuminate\Pagination\LengthAwarePaginator(

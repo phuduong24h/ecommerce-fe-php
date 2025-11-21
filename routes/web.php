@@ -23,7 +23,7 @@ Route::post('/cart/remove', [CartController::class, 'remove'])->name('cart.remov
 Route::prefix('admin')->name('admin.')->group(function () {
 
     //Dashboard
-    Route::get('/', [DashboardController::class, 'index'])->name('dashboard');
+    //Route::get('/', [DashboardController::class, 'index'])->name('dashboard');
     Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
     //Products
     Route::get('/products', [ProductController::class, 'index'])->name('products.index');

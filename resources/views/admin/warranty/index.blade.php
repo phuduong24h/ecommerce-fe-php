@@ -31,23 +31,24 @@
                 'x-circle' => '<svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>',
             ];
         @endphp
-
         <!-- Stats Cards -->
         <div class="grid gap-4 md:grid-cols-4">
             @foreach($statusConfig as $status => $config)
-                @php $count = collect($claims)->where('status', $status)->count(); @endphp
                 <div class="rounded-lg border bg-card text-card-foreground shadow-sm">
                     <div class="p-6 flex items-center justify-between">
                         <div>
                             <p class="text-sm font-medium text-muted-foreground">{{ $config['label'] }}</p>
                             <p class="text-2xl font-bold mt-1 text-{{ $config['color'] }}-600 stats-count"
-                                data-status="{{ $status }}">{{ $count }}</p>
+                                data-status="{{ $status }}">
+                                {{ $statusCounts[$status] ?? 0 }}
+                            </p>
                         </div>
                         {!! $lucideIcons[$config['lucide']] ?? '' !!}
                     </div>
                 </div>
             @endforeach
         </div>
+
 
         <!-- Search & Filter -->
         <div class="p-6 border rounded-lg bg-card mt-4 flex flex-col sm:flex-row gap-4">
