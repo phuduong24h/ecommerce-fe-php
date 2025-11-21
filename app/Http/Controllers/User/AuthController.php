@@ -6,32 +6,39 @@ use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Http;
 
+// Văn Hải
 class AuthController extends Controller
 {
     /**
-     * Hàm tạo URL API
-     * - config('services.api.url') đã chứa "http://localhost:3000/api/v1"
-     * - Chỉ cần nối thêm endpoint cụ thể (ví dụ: "/admin/auth/login")
+     * Hàm tạo URL API chuẩn
+     * - config('services.api.url') là "http://localhost:3000"
+     * - Hàm này sẽ nối thêm "/api/v1" và endpoint
      */
     private function apiUrl($path)
     {
-        // Loại bỏ dấu '/' ở cuối config nếu có, rồi nối với path
-        return rtrim(config('services.api.url'), '/') . $path;
+        // 1. Lấy URL gốc (http://localhost:3000)
+        $base = rtrim(config('services.api.url'), '/');
+        
+        // 2. Đảm bảo path bắt đầu bằng /
+        $path = '/' . ltrim($path, '/');
+
+        // 3. Nối chuỗi: http://localhost:3000 + /api/v1 + /path
+        return $base . '/api/v1' . $path;
     }
 
     /**
-     * Hàm gửi request có token (DÙNG CHO CÁC CONTROLLER KHÁC)
+     * Hàm gửi request có token (Dùng cho các logic nội bộ nếu cần)
      */
     protected function apiWithToken($method, $path, $data = [])
     {
-        $token = session('admin_token');  // lấy token từ session
+        $token = session('admin_token');
 
         return Http::withToken($token)
             ->$method($this->apiUrl($path), $data);
     }
 
     // ============================================
-    // USER LOGIN (BẢO HÀNH)
+    // USER LOGIN (KHÁCH HÀNG)
     // ============================================
     public function showUserLogin()
     {
@@ -45,30 +52,36 @@ class AuthController extends Controller
             'password' => 'required|string'
         ]);
 
-        // Sửa đường dẫn: Bỏ '/api/v1' vì đã có trong config
+        // Gọi API: http://localhost:3000/api/v1/auth/login
         $res = Http::post($this->apiUrl("/auth/login"), [
             "email"    => $request->email,
             "password" => $request->password
         ]);
 
-        if ($res->failed()) {
-            return back()->withErrors(['msg' => 'Sai email hoặc mật khẩu!']);
+        $json = $res->json();
+
+        // Kiểm tra lỗi từ Backend
+        if ($res->failed() || !($json['success'] ?? false)) {
+            return back()->withErrors(['msg' => $json['message'] ?? 'Sai email hoặc mật khẩu!']);
         }
 
-        $data = $res->json();
+        // SỬA QUAN TRỌNG: Lấy data từ key ['data']
+        $data = $json['data'];
 
+        // Lưu Session cho User (Dùng key user_token để đồng bộ với CartController/WarrantyController)
         session([
-            'node_token' => $data['token'],
-            'node_user'  => $data['user']
+            'user_token' => $data['token'], // Đồng bộ tên key với các Controller khác
+            'user'       => $data['user']   // Đồng bộ tên key với các Controller khác
         ]);
 
-        return redirect()->route('warranty.index');
+        return redirect()->route('home'); // Thường user login xong về trang chủ hoặc trang trước đó
     }
 
     public function userLogout()
     {
-        session()->forget(['node_token', 'node_user']);
-        return redirect()->route('user.login');
+        // Xóa session user
+        session()->forget(['user_token', 'user', 'user.cart']);
+        return redirect()->route('login');
     }
 
     // ============================================
@@ -86,25 +99,21 @@ class AuthController extends Controller
             'password' => 'required|string'
         ]);
 
-        // Sửa đường dẫn: Bỏ '/api/v1', chỉ để lại '/admin/auth/login'
-        // Thêm asJson() để gửi đúng định dạng JSON
+        // Gọi API: http://localhost:3000/api/v1/admin/auth/login
         $response = Http::asJson()->post($this->apiUrl("/admin/auth/login"), [
             'email'    => $request->email,
             'password' => $request->password
-            // Không cần 'role' => 'ADMIN' nữa vì server tự check trong DB
         ]);
 
-        if ($response->failed()) {
-            // Debug lỗi nếu cần
-            // dd($response->json());
-            return back()->withErrors(['error' => 'Sai email hoặc mật khẩu!']);
+        $json = $response->json();
+
+        if ($response->failed() || !($json['success'] ?? false)) {
+            return back()->withErrors(['error' => $json['message'] ?? 'Đăng nhập thất bại!']);
         }
 
-        $data  = $response->json();
-
-        // Kiểm tra và lưu token
-        if (isset($data['data']['token'])) {
-            session(['admin_token' => $data['data']['token']]);
+        // Kiểm tra và lưu token Admin
+        if (isset($json['data']['token'])) {
+            session(['admin_token' => $json['data']['token']]);
             return redirect()->route('admin.dashboard');
         }
 
@@ -112,7 +121,7 @@ class AuthController extends Controller
     }
 
     // ============================================
-    // GỬI OTP
+    // GỬI OTP (ADMIN)
     // ============================================
     public function showForgot()
     {
@@ -121,11 +130,8 @@ class AuthController extends Controller
 
     public function submitForgot(Request $request)
     {
-        $request->validate([
-            'email' => 'required|email'
-        ]);
+        $request->validate(['email' => 'required|email']);
 
-        // Sửa đường dẫn: Bỏ '/api/v1'
         $response = Http::post($this->apiUrl("/admin/auth/send-otp"), [
             'email' => $request->email
         ]);
@@ -141,24 +147,20 @@ class AuthController extends Controller
     }
 
     // ============================================
-    // XÁC MINH OTP
+    // XÁC MINH OTP (ADMIN)
     // ============================================
     public function showVerify()
     {
         if (!session('reset_email')) {
             return redirect()->route('admin.forgot');
         }
-
         return view('user.admin.verify-otp');
     }
 
     public function submitVerify(Request $request)
     {
-        $request->validate([
-            'otp' => 'required'
-        ]);
+        $request->validate(['otp' => 'required']);
 
-        // Sửa đường dẫn: Bỏ '/api/v1'
         $response = Http::post($this->apiUrl("/admin/auth/verify-otp"), [
             'email' => session('reset_email'),
             'otp'   => $request->otp
@@ -173,27 +175,20 @@ class AuthController extends Controller
     }
 
     // ============================================
-    // HIỂN THỊ FORM ĐẶT LẠI MẬT KHẨU
+    // ĐẶT LẠI MẬT KHẨU (ADMIN)
     // ============================================
     public function showReset()
     {
         if (!session('reset_email')) {
             return redirect()->route('admin.forgot');
         }
-
         return view('user.admin.reset-password');
     }
 
-    // ============================================
-    // SUBMIT ĐẶT LẠI MẬT KHẨU
-    // ============================================
     public function submitReset(Request $request)
     {
-        $request->validate([
-            'password' => 'required|min:6'
-        ]);
+        $request->validate(['password' => 'required|min:6']);
 
-        // Sửa đường dẫn: Bỏ '/api/v1'
         $response = Http::post($this->apiUrl("/admin/auth/reset-password"), [
             'email'    => session('reset_email'),
             'password' => $request->password

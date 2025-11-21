@@ -8,174 +8,156 @@ use Illuminate\Support\Facades\Http;
 
 class WarrantyController extends Controller
 {
-    private $token = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjY5MTVlM2JlZGQ1MzM2NDg5NzYyYjcyMCIsIm5hbWUiOiJOZ3V5ZW4gVmFuIEEiLCJlbWFpbCI6ImFiY0BnbWFpbC5jb20iLCJyb2xlIjoiQ1VTVE9NRVIiLCJpYXQiOjE3NjM2MTYzMTEsImV4cCI6MTc2NDIyMTExMX0.q3UeOcnwKfG0-JjBP-sY7RzTbuB0myHLMabVCR2MPAg";
-
+    // XÓA biến private $token cứng ở đây vì không dùng được cho nhiều user
+    
     /* ------------------------------------------------------
-        API GET Helper
+       HELPER: GỌI API VỚI TOKEN CỦA USER ĐANG ĐĂNG NHẬP
     ------------------------------------------------------ */
-    private function apiGet($url, $query = [])
+    private function apiGet($path)
     {
         try {
-            $res = Http::withToken($this->token)->get($url, $query);
+            // 1. Lấy Token từ Session (Token của người đang đăng nhập)
+            $token = session('user_token');
+            
+            // 2. Lấy URL gốc từ file cấu hình (đã setup ở các bước trước)
+            // Kết quả sẽ là: http://localhost:3000/api/v1/orders/me
+            $baseUrl = config('services.api.url') . '/api/v1';
+            $url = $baseUrl . '/' . ltrim($path, '/');
+
+            // 3. Gọi API
+            $res = Http::withToken($token)->timeout(10)->get($url);
+            
             return $res->ok() ? $res->json() : null;
         } catch (\Throwable $e) {
             return null;
         }
     }
 
-    /* ------------------------------------------------------
-        Helper: Lấy serial từ order item
-    ------------------------------------------------------ */
-    private function extractSerial($item)
-    {
-        if (!empty($item['productSnapshot']['sku'])) {
-            return $item['productSnapshot']['sku'];
-        }
-
-        if (!empty($item['productSerial'])) {
-            return $item['productSerial'];
-        }
-
-        return null;
-    }
-
     /* ======================================================
-        TRANG CHÍNH – GHÉP ORDERS + CLAIMS
+        HIỂN THỊ TRANG BẢO HÀNH
     ====================================================== */
     public function index()
     {
-        $claims = [];
-        $purchased = [];
-        $orderSerialMap = [];
+        // 1. Lấy danh sách claim (Lịch sử bảo hành)
+        $claimRes = $this->apiGet("warranty/me"); // Gọi ngắn gọn endpoint
+        $claimList = $claimRes["data"] ?? [];
 
-        /* -------------------------------------------
-            1. Lấy orders → map serial + purchased list
-        ------------------------------------------- */
-        $orderRes = $this->apiGet("http://localhost:3000/api/v1/orders/me");
+        // claim mới nhất theo serial
+        $latestClaimBySerial = [];
 
-        if ($orderRes && isset($orderRes['data'])) {
+        foreach ($claimList as $c) {
+            $serial = $c["productSerial"];
 
-            foreach ($orderRes['data'] as $order) {
-                foreach ($order['items'] as $item) {
+            if (
+                !isset($latestClaimBySerial[$serial]) ||
+                strtotime($c["createdAt"]) > strtotime($latestClaimBySerial[$serial]["createdAt"])
+            ) {
 
-                    $serial = $this->extractSerial($item);
-
-                    // Map để ghép serial vào claim sau này
-                    $orderSerialMap[$order['id']][$item['productId']] = $serial;
-
-                    // Push purchased list
-                    $purchased[] = [
-                        "orderId"     => $order['id'],
-                        "productId"   => $item['productId'],
-                        "productName" => $item['productSnapshot']['name'] ?? $item['name'],
-                        "serials"     => [$serial],
-                        "quantity"    => $item['quantity'],
-                        "purchasedAt" => $order['createdAt']
-                    ];
-                }
-            }
-        }
-
-        /* -------------------------------------------
-            2. Lấy Claims và ghép thêm serial
-        ------------------------------------------- */
-        $claimRes = $this->apiGet("http://localhost:3000/api/v1/warranty/me");
-
-        if ($claimRes && isset($claimRes['data'])) {
-
-            foreach ($claimRes['data'] as $c) {
-
-                // Serial gốc từ claim
-                $serial = $c['productSerial'] ?? null;
-
-                // Nếu claim không có serial → lấy từ order
-                if (!$serial) {
-                    $oid = $c['orderId'] ?? null;
-                    $pid = $c['productId'] ?? null;
-
-                    if ($oid && $pid && isset($orderSerialMap[$oid][$pid])) {
-                        $serial = $orderSerialMap[$oid][$pid];
-                    }
-                }
-
-                $claims[] = [
-                    "id"          => $c['id'],
-                    "productName" => $c['productName'],
-                    "serial"      => $serial ?? "Không có",
-                    "description" => $c['issueDesc'] ?? "Không có mô tả",
-                    "status"      => $c['status'],
-                    "estimate"    => $c['estimateDate'] ?? null,
-                    "createdAt"   => date('Y-m-d', strtotime($c['createdAt'])),
+                $latestClaimBySerial[$serial] = [
+                    "serial"      => $serial,
+                    "productName" => $c["productName"],
+                    "status"      => $c["status"],
+                    "description" => $c["issueDesc"] ?? "",
+                    "createdAt"   => date("d/m/Y", strtotime($c["createdAt"])),
+                    "estimate"    => $c["estimatedAt"] ?? null,
+                    "claimId"     => $c["id"]
                 ];
             }
         }
 
-        return view("user.warranty.warranty", compact("claims", "purchased"));
+        // 2. Lấy order (Lịch sử mua hàng)
+        $orderRes = $this->apiGet("orders/me");
+        $orders = $orderRes["data"] ?? [];
+
+        $purchased = [];
+
+        foreach ($orders as $order) {
+
+            foreach ($order["items"] as $item) {
+
+                $snapshot = $item["productSnapshot"] ?? null;
+
+                $productName =
+                    $snapshot["name"]
+                    ?? $item["name"]
+                    ?? "Tên sản phẩm không xác định";
+
+                $serial =
+                    $snapshot["sku"] // Giả sử SKU được dùng làm Serial
+                    ?? $item["productSerial"] // Hoặc field riêng nếu có
+                    ?? null;
+
+                // Chỉ hiển thị nếu sản phẩm có Serial (đồ điện tử)
+                // if ($serial) {
+                    $purchased[] = [
+                        "orderId"     => $order["id"],
+                        "productId"   => $item["productId"],
+                        "productName" => $productName,
+                        "serial"      => $serial,
+                        "quantity"    => $item["quantity"],
+                        "purchasedAt" => date("d/m/Y", strtotime($order["createdAt"])),
+                        "latestClaim" => $latestClaimBySerial[$serial] ?? null
+                    ];
+                //}
+            }
+        }
+
+        return view("user.warranty.warranty", compact("purchased", "latestClaimBySerial", "claimList"));
     }
 
+
     /* ======================================================
-        CHECK SERIAL
+        KIỂM TRA SỐ SERIAL — HIỂN THỊ TOÀN BỘ LỊCH SỬ
     ====================================================== */
     public function checkSerial(Request $request)
     {
         $request->validate(["serial_number" => "required"]);
         $serial = $request->serial_number;
 
-        $orderRes = $this->apiGet("http://localhost:3000/api/v1/orders/me");
-        $found = null;
+        // BƯỚC 1: Phải kiểm tra trong ORDERS trước xem User có mua nó không
+        $orderRes = $this->apiGet("orders/me");
+        $orders = $orderRes["data"] ?? [];
+        $productInfo = null;
 
-        if ($orderRes && isset($orderRes['data'])) {
-
-            foreach ($orderRes['data'] as $order) {
-                foreach ($order['items'] as $item) {
-
-                    $sku = $item['productSnapshot']['sku'] ?? null;
-
-                    if ($sku === $serial) {
-
-                        $found = [
-                            "name"        => $item['productSnapshot']['name'],
-                            "orderId"     => $order['id'],
-                            "serial"      => $serial,
-                            "purchasedAt" => $order['createdAt'],
-                        ];
-
-                        break 2;
-                    }
+        foreach ($orders as $order) {
+            foreach ($order["items"] as $item) {
+                $itemSerial = $item["productSnapshot"]["sku"] ?? $item["productSerial"] ?? '';
+                if ($itemSerial === $serial) {
+                    $productInfo = [
+                        "name"        => $item["productSnapshot"]["name"] ?? $item["name"],
+                        "serial"      => $serial,
+                        "orderId"     => $order["id"],
+                        "purchasedAt" => date("d/m/Y", strtotime($order["createdAt"])),
+                    ];
+                    break 2; // Tìm thấy rồi thì thoát vòng lặp
                 }
             }
         }
 
-        if (!$found) {
-            return back()->withErrors(["msg" => "Serial không tồn tại hoặc không hợp lệ!"]);
+        if (!$productInfo) {
+            return back()->withErrors(["msg" => "Serial không tồn tại hoặc không phải sản phẩm bạn đã mua."]);
         }
 
-        /* Tìm lý do bảo hành gần nhất */
-        $claimRes = $this->apiGet("http://localhost:3000/api/v1/warranty/me");
-        $lastReason = null;
-        $lastDate = null;
+        // BƯỚC 2: Lấy lịch sử bảo hành của Serial này
+        $claimRes = $this->apiGet("warranty/me");
+        $claimList = $claimRes["data"] ?? [];
 
-        if ($claimRes && isset($claimRes['data'])) {
+        // Lọc các claim liên quan đến serial này
+        $claimsForSerial = collect($claimList)
+            ->where("productSerial", $serial)
+            ->sortByDesc("createdAt")
+            ->values()
+            ->toArray();
 
-            foreach ($claimRes['data'] as $c) {
-
-                if (($c['productSerial'] ?? null) === $serial) {
-
-                    if (!$lastDate || strtotime($c['createdAt']) > strtotime($lastDate)) {
-                        $lastDate = $c['createdAt'];
-                        $lastReason = $c['issueDesc'];
-                    }
-                }
-            }
-        }
-
-        $found['lastReason'] = $lastReason;
-
-        return back()->with("productInfo", $found);
+        // Trả về View kèm Info sản phẩm và Lịch sử sửa chữa
+        return back()
+            ->with("productInfo", $productInfo)
+            ->with("serialClaims", $claimsForSerial);
     }
 
+
     /* ======================================================
-        SUBMIT CLAIM
+        GỬI YÊU CẦU BẢO HÀNH
     ====================================================== */
     public function submitClaim(Request $request)
     {
@@ -185,52 +167,56 @@ class WarrantyController extends Controller
         ]);
 
         $serial = $request->serial_number;
-        $orderRes = $this->apiGet("http://localhost:3000/api/v1/orders/me");
-        $found = null;
 
-        /* Tìm sản phẩm ứng với serial */
-        if ($orderRes && isset($orderRes['data'])) {
+        // SỬA LOGIC: Lấy thông tin từ ORDER (đơn hàng) chứ không phải từ Claim cũ
+        // Vì nếu bảo hành lần đầu thì chưa có trong warranty/me
+        $orderRes = $this->apiGet("orders/me");
+        $orders = $orderRes["data"] ?? [];
 
-            foreach ($orderRes['data'] as $order) {
-                foreach ($order['items'] as $item) {
+        $match = null;
 
-                    if (($item['productSnapshot']['sku'] ?? null) === $serial) {
-
-                        $found = [
-                            "orderId"     => $order['id'],
-                            "productId"   => $item['productId'],
-                            "productName" => $item['productSnapshot']['name'],
-                            "purchasedAt" => $order['createdAt']
-                        ];
-
-                        break 2;
-                    }
+        // Tìm sản phẩm trong danh sách đã mua
+        foreach ($orders as $order) {
+            foreach ($order["items"] as $item) {
+                $itemSerial = $item["productSnapshot"]["sku"] ?? $item["productSerial"] ?? '';
+                
+                if ($itemSerial === $serial) {
+                    $match = [
+                        "orderId"     => $order["id"],
+                        "productId"   => $item["productId"],
+                        "productName" => $item["productSnapshot"]["name"] ?? $item["name"],
+                        "purchasedAt" => $order["createdAt"], // Giữ nguyên định dạng gốc để gửi API
+                    ];
+                    break 2;
                 }
             }
         }
 
-        if (!$found) {
-            return back()->withErrors(["msg" => "Không tìm thấy sản phẩm với serial này!"]);
+        if (!$match) {
+            return back()->withErrors(["msg" => "Serial không hợp lệ hoặc bạn chưa mua sản phẩm này!"]);
         }
 
-        /* Gửi request tạo claim */
+        // Chuẩn bị Payload gửi lên Node.js
         $payload = [
-            "orderId"       => $found['orderId'],
-            "productId"     => $found['productId'],
-            "productName"   => $found['productName'],
-            "issueDesc"     => $request->description,
+            "orderId"       => $match["orderId"],
+            "productId"     => $match["productId"],
+            "productName"   => $match["productName"],
             "productSerial" => $serial,
-            "purchasedAt"   => $found['purchasedAt'],
+            "purchasedAt"   => $match["purchasedAt"],
+            "issueDesc"     => $request->description,
             "images"        => [],
         ];
 
-        $res = Http::withToken($this->token)
-            ->post("http://localhost:3000/api/v1/warranty/claim", $payload);
+        // Gửi POST request (Dùng session token)
+        $url = config('services.api.url') . '/api/v1/warranty/claim';
+        $token = session('user_token');
 
-        if ($res->failed()) {
-            return back()->withErrors(["msg" => "Gửi yêu cầu thất bại!"]);
+        $response = Http::withToken($token)->post($url, $payload);
+
+        if ($response->successful()) {
+            return back()->with("success", "Gửi yêu cầu bảo hành thành công!");
+        } else {
+            return back()->withErrors(["msg" => "Lỗi hệ thống: " . ($response->json()['message'] ?? 'Không thể gửi yêu cầu')]);
         }
-
-        return back()->with("success", "Gửi yêu cầu bảo hành thành công!");
     }
 }

@@ -2,15 +2,36 @@
 namespace App\Http\Controllers\User;
 
 use App\Http\Controllers\Controller;
-use App\Services\ApiClientService;
+use Illuminate\Support\Facades\Http;
 
+// Kim Hải
 class AccountController extends Controller
 {
-    protected ApiClientService $api;
-
-    public function __construct(ApiClientService $api)
+    // Hàm helper để lấy Base URL đúng (đã thêm /api/v1)
+    private function getBaseUrl()
     {
-        $this->api = $api;
+        return config('services.api.url') . '/api/v1';
+    }
+
+    // Hàm helper để gọi API GET kèm Token User
+    private function getData($endpoint)
+    {
+        $url = $this->getBaseUrl() . '/' . $endpoint;
+        
+        try {
+            $response = Http::withToken(session('user_token')) // <--- QUAN TRỌNG NHẤT
+                            ->timeout(10)
+                            ->get($url);
+
+            if ($response->successful()) {
+                $json = $response->json();
+                return $json['data'] ?? [];
+            }
+        } catch (\Exception $e) {
+            // Log lỗi nếu cần thiết
+        }
+
+        return [];
     }
 
     public function index()
@@ -18,14 +39,11 @@ class AccountController extends Controller
         return $this->orders();
     }
 
-    // Lấy đơn hàng của tôi
+    // 1. Lấy đơn hàng của tôi
     public function orders()
     {
-        $res = $this->api->get('orders/me');
-
-        $orders = (isset($res['success']) && $res['success'] === false)
-            ? []
-            : ($res['data'] ?? []);
+        // Gọi API: /orders/me
+        $orders = $this->getData('orders/me');
 
         return view('user.account.index', [
             'activeTab' => 'orders',
@@ -33,14 +51,11 @@ class AccountController extends Controller
         ]);
     }
 
-    // Lấy danh sách bảo hành của tôi
+    // 2. Lấy danh sách bảo hành của tôi
     public function warranty()
     {
-        $res = $this->api->get('warranty/me');
-
-        $warranties = (isset($res['success']) && $res['success'] === false)
-            ? []
-            : ($res['data'] ?? []);
+        // Gọi API: /warranty/me
+        $warranties = $this->getData('warranty/me');
 
         return view('user.account.index', [
             'activeTab' => 'warranty',
@@ -48,25 +63,27 @@ class AccountController extends Controller
         ]);
     }
 
-    // Lấy thông tin profile của user
+    // 3. Lấy thông tin profile của user
     public function profile()
-{
-    $res = $this->api->get('users/me');
+    {
+        // Gọi API: /users/me
+        $user = $this->getData('users/me');
 
-    $user = (isset($res['success']) && $res['success'] === false)
-        ? []
-        : ($res['data'] ?? []);
+        // Xử lý hiển thị ngày tham gia
+        if (!empty($user['createdAt'])) {
+            $timestamp = strtotime($user['createdAt']);
+            $user['member_since'] = 'Tháng ' . date('n', $timestamp) . ', ' . date('Y', $timestamp);
+        } else {
+            $user['member_since'] = 'Thành viên mới';
+        }
 
-    // Format ngày tham gia: Tháng X, Năm Y
-    if (!empty($user['createdAt'])) {
-        $timestamp = strtotime($user['createdAt']);
-        $user['member_since'] = 'Tháng ' . date('n', $timestamp) . ', ' . date('Y', $timestamp);
+        // Fallback dữ liệu nếu API trả về thiếu
+        $user['name'] = $user['name'] ?? 'Người dùng';
+        $user['email'] = $user['email'] ?? session('user.email'); // Lấy tạm từ session nếu API lỗi
+
+        return view('user.account.index', [
+            'activeTab' => 'profile',
+            'user' => $user
+        ]);
     }
-
-    return view('user.account.index', [
-        'activeTab' => 'profile',
-        'user' => $user
-    ]);
-}
-
 }

@@ -13,7 +13,8 @@ class CategoryService
     public function __construct()
     {
         $this->baseUrl = config('services.api.url') . '/api/v1/admin';
-        $this->token = config('services.api.token');
+        // $this->token = config('services.api.token');
+        $this->token = session('admin_token');
     }
 
     /**

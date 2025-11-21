@@ -11,8 +11,8 @@ class WarrantyServiceUser
 
     public function __construct()
     {
-        // URL API Backend (http://localhost:3000/api/v1)
-        $this->baseUrl = config('services.api.url');
+        // SỬA: Nối thêm '/api/v1'
+        $this->baseUrl = config('services.api.url') . '/api/v1';
     }
 
     public function getAllPolicies()

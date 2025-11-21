@@ -6,7 +6,7 @@
 
     <div class="max-w-5xl mx-auto px-4 py-8">
 
-        <!-- PAGE HEADER -->
+        <!-- HEADER -->
         <div class="flex items-center gap-4 mb-8">
             <div class="bg-blue-100 text-blue-600 p-3 rounded-2xl">
                 <i class="fas fa-shield-alt text-xl"></i>
@@ -32,202 +32,142 @@
             </button>
         </div>
 
-
-
-        <!-- ====================== -->
-        <!-- CHECK WARRANTY SECTION -->
-        <!-- ====================== -->
+        <!-- =================== -->
+        <!-- CHECK WARRANTY TAB -->
+        <!-- =================== -->
         <div id="checkSection">
 
-            <!-- Search Serial Box -->
+            <!-- Search Serial -->
             <div class="border border-blue-100 bg-blue-50 rounded-2xl p-6 mb-8">
-
-                <h3 class="text-gray-700 font-semibold mb-2">Nhập Số Serial Sản Phẩm</h3>
-
                 <form method="POST" action="{{ route('warranty.check') }}">
                     @csrf
-
-                    <div
-                        class="flex bg-white border rounded-full px-5 py-3 shadow-sm
-                            items-center focus-within:ring-2 focus-within:ring-blue-300 transition">
-
-                        <input id="serial_check_input" name="serial_number" placeholder="Ví dụ: SN-12345-ABCD"
-                            class="flex-1 outline-none bg-transparent text-gray-700 placeholder-gray-400">
-
-                        <button type="submit"
-                            class="ml-3 px-5 py-2 rounded-full bg-blue-600 text-white font-semibold
-                               hover:bg-blue-700 flex items-center gap-2 transition">
-                            <i class="fas fa-search"></i> Kiểm Tra
+                    <div class="flex bg-white border rounded-full px-5 py-3 shadow-sm items-center">
+                        <input name="serial_number" placeholder="Ví dụ: SN-12345-ABCD"
+                            class="flex-1 outline-none bg-transparent">
+                        <button class="ml-3 px-5 py-2 rounded-full bg-blue-600 text-white font-semibold">
+                            Kiểm Tra
                         </button>
                     </div>
                 </form>
-
-                <p class="text-sm text-gray-500 mt-2">Tìm số serial ở mặt sau hoặc dưới sản phẩm</p>
             </div>
 
-
-            <!-- PRODUCT INFO RESULT -->
+            <!-- RESULT -->
             @if (session('productInfo'))
-                <div class="bg-green-50 border border-green-200 rounded-xl p-5 mb-8 shadow-sm">
+                <div class="bg-green-50 border border-green-200 rounded-xl p-5 mb-8">
 
                     <p class="font-semibold text-green-700 mb-2 text-lg">🔎 Kết quả kiểm tra</p>
 
                     <p><strong>Tên sản phẩm:</strong> {{ session('productInfo')['name'] }}</p>
                     <p><strong>Serial:</strong> {{ session('productInfo')['serial'] }}</p>
                     <p><strong>Order ID:</strong> {{ session('productInfo')['orderId'] }}</p>
-                    <p><strong>Ngày mua:</strong> {{ date('d/m/Y', strtotime(session('productInfo')['purchasedAt'])) }}</p>
+                    <p><strong>Ngày mua:</strong> {{ session('productInfo')['purchasedAt'] }}</p>
 
                     <hr class="my-3">
 
-                    <!-- SHOW LATEST CLAIM FOR THIS SERIAL -->
+                    <!-- FULL WARRANTY HISTORY -->
+                    <p class="text-gray-800 font-bold mb-2 text-lg">📌 Lịch sử bảo hành:</p>
+
                     @php
-                        $serial = session('productInfo')['serial'];
-                        $claimMatch = collect($claims)->firstWhere('serial', $serial);
+                        $serialClaims = session('serialClaims') ?? [];
                     @endphp
 
-                    <p class="text-gray-800 font-medium">Lý do bảo hành gần nhất:</p>
-
-                    @if ($claimMatch)
-                        <p><strong>Trạng thái:</strong> {{ $claimMatch['status'] }}</p>
-                        <p><strong>Lý do:</strong> {{ $claimMatch['description'] }}</p>
-                        <p><strong>Ngày gửi:</strong> {{ $claimMatch['createdAt'] }}</p>
-                    @else
-                        <p class="text-gray-500 italic">Chưa có yêu cầu bảo hành nào cho serial này.</p>
-                    @endif
+                    @foreach ($serialClaims as $c)
+                        <div class="bg-white border rounded-xl p-4 mb-3 shadow-sm">
+                            <p><strong>Trạng thái:</strong> {{ $c['status'] }}</p>
+                            <p><strong>Lý do:</strong> {{ $c['issueDesc'] }}</p>
+                            <p><strong>Ngày gửi:</strong> {{ date('d/m/Y', strtotime($c['createdAt'])) }}</p>
+                        </div>
+                    @endforeach
 
                 </div>
             @endif
 
 
-
             <!-- PURCHASED PRODUCT LIST -->
-            <h2 class="text-xl font-semibold text-gray-900 mb-4">Sản phẩm bạn đã mua</h2>
+            <h2 class="text-xl font-semibold mb-4">Sản phẩm bạn đã mua</h2>
 
             @foreach ($purchased as $p)
-                <div class="bg-white border rounded-xl p-5 mb-5 shadow-sm hover:shadow-md transition">
+                <div class="bg-white border rounded-xl p-5 mb-5 shadow">
 
                     <div class="flex justify-between items-center">
                         <div>
-                            <p class="text-lg font-semibold text-gray-900">{{ $p['productName'] }}</p>
+                            <p class="text-lg font-semibold">{{ $p['productName'] }}</p>
                             <p class="text-gray-500 text-sm">Order ID: {{ $p['orderId'] }}</p>
-                            <p class="text-gray-500 text-sm">
-                                Ngày mua: {{ date('d/m/Y', strtotime($p['purchasedAt'])) }}
-                            </p>
+                            <p class="text-gray-500 text-sm">Ngày mua: {{ $p['purchasedAt'] }}</p>
                         </div>
-                        <span class="px-3 py-1 bg-gray-100 text-gray-600 rounded-full text-sm shadow">
+                        <span class="px-3 py-1 bg-gray-100 text-gray-600 rounded-full text-sm">
                             SL: {{ $p['quantity'] }}
                         </span>
                     </div>
 
                     <div class="mt-3">
-                        <p class="font-medium text-sm text-gray-700">Serial(s):</p>
+                        <p class="font-medium text-sm">Serial:</p>
 
-                        <div class="flex flex-wrap gap-2 mt-2">
-                            @foreach ($p['serials'] as $s)
-                                <button
-                                    class="use-serial-btn px-4 py-1.5 rounded-full bg-gray-100 hover:bg-blue-50
-                               border text-gray-700 shadow-sm transition text-sm"
-                                    data-serial="{{ $s }}">
-                                    <i class="fas fa-barcode text-blue-400"></i> {{ $s }}
-                                </button>
-                            @endforeach
-                        </div>
+                        @if ($p['serial'])
+                            <button
+                                class="use-serial-btn px-4 py-1.5 rounded-full bg-gray-100 hover:bg-blue-50 border text-gray-700 text-sm"
+                                data-serial="{{ $p['serial'] }}">
+                                {{ $p['serial'] }}
+                            </button>
+                        @else
+                            <p class="italic text-gray-500">Không có serial</p>
+                        @endif
+
+                        @if ($p['latestClaim'])
+                            <p class="mt-2 text-green-700 text-sm">
+                                <strong>Bảo hành gần nhất:</strong> {{ $p['latestClaim']['description'] }}
+                            </p>
+                        @endif
                     </div>
                 </div>
             @endforeach
 
         </div>
-        <!-- ====================== -->
-        <!-- REQUEST CLAIM SECTION -->
-        <!-- ====================== -->
+
+        <!-- =============== -->
+        <!-- REQUEST TAB     -->
+        <!-- =============== -->
         <div id="requestSection" class="hidden">
 
-            <!-- Claim Form -->
-            <div class="border border-gray-200 bg-white rounded-2xl p-6 shadow-sm">
+            <div class="border border-gray-200 bg-white rounded-2xl p-6 shadow">
 
-                <h2 class="text-xl font-bold text-gray-800 mb-4">Submit a Warranty Claim</h2>
+                <h2 class="text-xl font-bold mb-4">Gửi yêu cầu bảo hành</h2>
 
                 <form method="POST" action="{{ route('warranty.claim') }}" class="space-y-5">
                     @csrf
 
-                    <!-- Serial -->
                     <div>
-                        <label class="font-semibold text-gray-700 mb-1 block">Product Serial Number</label>
-                        <input id="claim_serial_input" name="serial_number" placeholder="SN-12345-ABCD"
-                            class="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 outline-none shadow-sm">
+                        <label class="font-semibold mb-1 block">Serial</label>
+                        <input id="claim_serial_input" name="serial_number"
+                            class="w-full bg-gray-50 border rounded-xl px-4 py-3">
                     </div>
 
-                    <!-- Issue -->
                     <div>
-                        <label class="font-semibold text-gray-700 mb-1 block">Describe the Issue</label>
-                        <textarea name="description" rows="4" placeholder="Describe the problem with your product..."
-                            class="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 outline-none shadow-sm"></textarea>
+                        <label class="font-semibold mb-1 block">Mô tả lỗi</label>
+                        <textarea name="description" rows="4" class="w-full bg-gray-50 border rounded-xl px-4 py-3"></textarea>
                     </div>
 
-                    <!-- Warning -->
-                    <div
-                        class="bg-yellow-50 border border-yellow-200 p-4 rounded-xl text-yellow-700 text-sm flex items-start gap-3">
-                        <i class="fas fa-info-circle mt-1"></i>
-                        <span>Please ensure the serial number is correct. Claims are processed in 3–5 business days.</span>
-                    </div>
-
-                    <!-- Submit Button -->
-                    <button
-                        class="w-full py-3 font-semibold text-white rounded-xl shadow-md
-                           bg-gradient-to-r from-purple-500 to-pink-500 hover:opacity-90 transition">
-                        Submit Claim
+                    <button class="w-full py-3 text-white rounded-xl bg-gradient-to-r from-purple-500 to-pink-500">
+                        Gửi yêu cầu
                     </button>
                 </form>
             </div>
 
+            <h2 class="text-xl font-bold mt-8 mb-3">Lịch sử yêu cầu</h2>
 
-            <!-- Claim List -->
-            <h2 class="text-xl font-bold text-gray-900 mt-8 mb-3">My Warranty Claims</h2>
-
-            @php
-                $badgeColor = [
-                    'approved' => 'bg-green-100 text-green-700',
-                    'in-progress' => 'bg-blue-100 text-blue-700',
-                    'pending' => 'bg-yellow-100 text-yellow-700',
-                    'rejected' => 'bg-red-100 text-red-700',
-                ];
-            @endphp
-
-            @foreach ($claims as $c)
-                <div class="bg-white border rounded-xl p-5 mb-5 shadow-sm hover:shadow-md transition">
-
-                    <div class="flex justify-between items-center">
-                        <p class="text-lg font-semibold text-gray-900">{{ $c['productName'] }}</p>
-                        <span class="text-gray-500 text-sm">{{ $c['createdAt'] }}</span>
-                    </div>
-
-                    <span
-                        class="px-3 py-1 text-xs rounded-full font-semibold mt-2 inline-block shadow {{ $badgeColor[$c['status']] ?? 'bg-gray-100 text-gray-700' }}">
-                        {{ $c['status'] }}
-                    </span>
-
-                    <p class="mt-3 text-sm"><strong>Serial:</strong> {{ $c['productSerial'] ?? 'Không có' }}</p>
-                    <p class="mt-1 text-sm"><strong>Claim ID:</strong> {{ $c['id'] }}</p>
-
-                    <p class="text-gray-700 text-sm mt-1">
-                        <strong>Lý do bảo hành:</strong> {{ $c['description'] }}
-                    </p>
-
-                    @if ($c['estimate'])
-                        <p class="text-blue-600 text-sm font-medium mt-2">
-                            Estimated resolution: {{ $c['estimate'] }}
-                        </p>
-                    @endif
-
+            @foreach ($claimList as $c)
+                <div class="bg-white border rounded-xl p-5 mb-5 shadow">
+                    <p class="text-lg font-semibold">{{ $c['productName'] }}</p>
+                    <p><strong>Serial:</strong> {{ $c['productSerial'] }}</p>
+                    <p><strong>Lý do:</strong> {{ $c['issueDesc'] }}</p>
+                    <p><strong>Trạng thái:</strong> {{ $c['status'] }}</p>
+                    <p class="text-gray-500 text-sm">{{ date('d/m/Y', strtotime($c['createdAt'])) }}</p>
                 </div>
             @endforeach
 
         </div>
 
     </div>
-
-
-
 
     <script>
         const tabCheck = document.getElementById("tabCheck");
@@ -237,15 +177,9 @@
 
         function switchTab(tab) {
             if (tab === "check") {
-                tabCheck.classList.add("bg-gradient-to-r", "from-blue-600", "to-blue-400", "text-white");
-                tabRequest.classList.remove("bg-gradient-to-r", "from-purple-500", "to-pink-500", "text-white");
-
                 checkSection.classList.remove("hidden");
                 requestSection.classList.add("hidden");
             } else {
-                tabRequest.classList.add("bg-gradient-to-r", "from-purple-500", "to-pink-500", "text-white");
-                tabCheck.classList.remove("bg-gradient-to-r", "from-blue-600", "to-blue-400", "text-white");
-
                 requestSection.classList.remove("hidden");
                 checkSection.classList.add("hidden");
             }
@@ -254,7 +188,6 @@
         tabCheck.onclick = () => switchTab("check");
         tabRequest.onclick = () => switchTab("request");
 
-        // Click serial → autofill + switch tab
         document.querySelectorAll(".use-serial-btn").forEach(btn => {
             btn.addEventListener("click", function() {
                 document.getElementById("claim_serial_input").value = this.dataset.serial;

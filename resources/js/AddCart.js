@@ -1,80 +1,94 @@
 import './bootstrap';
+
 document.addEventListener('DOMContentLoaded', () => {
 
-    // Lấy các biến toàn cục đã "nhúng" từ Blade
     const { cartAddUrl, isLoggedIn, loginUrl } = window.myApp;
-    const cartCountBadge = document.getElementById('cart-count-badge');
+    const cartCountBadge = document.getElementById('cart-count'); 
     const allAddToCartButtons = document.querySelectorAll('.add-to-cart-btn');
 
-    // Hàm cập nhật số đếm trên icon
+    // --- ĐÂY LÀ HÀM CẦN SỬA ---
     function updateCartIconCount(newCount) {
-        if (cartCountBadge) {
-            cartCountBadge.textContent = newCount;
+        if (!cartCountBadge) return;
+
+        // 1. Cập nhật nội dung số
+        cartCountBadge.textContent = newCount;
+
+        // 2. LOGIC QUAN TRỌNG: Ẩn/Hiện badge
+        if (newCount > 0) {
+            // Nếu có hàng -> Xóa class 'hidden' để nó hiện ra ngay
+            cartCountBadge.classList.remove('hidden');
+        } else {
+            // Nếu = 0 -> Thêm class 'hidden' để ẩn đi
+            cartCountBadge.classList.add('hidden');
         }
     }
+    // ---------------------------
 
-    // Gán sự kiện click cho tất cả các nút "Thêm vào Giỏ"
     allAddToCartButtons.forEach(button => {
         button.addEventListener('click', async function(event) {
             event.preventDefault();
 
-            // 1. Kiểm tra đăng nhập (phía client)
             if (!isLoggedIn) {
                 window.location.href = loginUrl;
                 return;
             }
 
-            // 2. Thay đổi trạng thái nút
+            // Hiệu ứng loading
+            const originalHtml = this.innerHTML;
             this.disabled = true;
-            this.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Đang thêm...';
+            this.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i>';
 
-            // 3. Lấy dữ liệu sản phẩm từ nút
-            const productData = JSON.parse(this.dataset.productJson);
+            // Parse dữ liệu
+            let productData;
+            try {
+                 productData = JSON.parse(this.dataset.productJson);
+            } catch (e) {
+                console.error("Lỗi JSON sản phẩm", e);
+                this.disabled = false;
+                this.innerHTML = originalHtml;
+                return;
+            }
 
             try {
-                // 4. Gọi đến CartController (POST /cart/add)
                 const response = await fetch(cartAddUrl, {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
                         'Accept': 'application/json',
-                        // Gửi token CSRF của Laravel
-                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content
                     },
-                    body: JSON.stringify({
-                        product_json: productData // Gửi toàn bộ object sản phẩm
-                    })
+                    body: JSON.stringify({ product_json: productData })
                 });
 
                 const result = await response.json();
 
-                if (!response.ok) {
-                    // Nếu là lỗi 401 (chưa auth), Controller sẽ trả về 'redirect'
-                    if (response.status === 401 && result.redirect) {
-                        window.location.href = result.redirect;
-                    }
-                    // Lỗi khác
+                // Xử lý redirect nếu chưa login (backend trả về 401)
+                if (response.status === 401 && result.redirect) {
+                    window.location.href = result.redirect;
+                    return;
+                }
+
+                if (result.success) {
+                    // --- GỌI HÀM CẬP NHẬT UI NGAY LẬP TỨC ---
+                    updateCartIconCount(result.newCartCount);
+
+                    // Hiệu ứng thành công
+                    this.innerHTML = '<i class="fa-solid fa-check"></i> Đã thêm';
+                    setTimeout(() => {
+                        this.disabled = false;
+                        this.innerHTML = originalHtml;
+                    }, 1500);
+                } else {
                     throw new Error(result.message || 'Lỗi không xác định');
                 }
 
-                // 5. Thành công! Cập nhật số đếm
-                if (result.success) {
-                    updateCartIconCount(result.newCartCount);
-
-                    // Cập nhật UI nút bấm
-                    this.innerHTML = '<i class="home-product-item__cart fa-solid fa-check"></i> Đã thêm!';
-                    setTimeout(() => {
-                        this.disabled = false;
-                        this.innerHTML = '<i class="home-product-item__cart fa-solid fa-cart-shopping"></i> Thêm vào Giỏ';
-                    }, 1500);
-                } else {
-                    throw new Error(result.message || 'Lỗi khi thêm vào giỏ hàng');
-                }
-
             } catch (error) {
-                console.error('Lỗi khi thêm vào giỏ hàng:', error);
+                console.error('Lỗi:', error);
                 this.disabled = false;
-                this.innerHTML = 'Lỗi! Thử lại';
+                this.innerHTML = 'Lỗi!';
+                setTimeout(() => {
+                     this.innerHTML = originalHtml;
+                }, 2000);
             }
         });
     });
