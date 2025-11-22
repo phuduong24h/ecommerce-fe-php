@@ -114,18 +114,32 @@ function removeItem(row) {
     .then(res => res.json())
     .then(data => {
 
-        if (!data.success) return;
+        if (!data.success) {
+            alert(data.message || 'Lỗi khi xóa sản phẩm');
+            return;
+        }
 
-        // Xóa phần tử khỏi DOM
+        // 1. Xóa phần tử khỏi DOM
         row.remove();
 
-        // cập nhật badge
+        // ---------------------------------------------------------
+        // 2. 🔥 BƯỚC QUAN TRỌNG: CẬP NHẬT LẠI INDEX 🔥
+        // Vì PHP array_splice đã đánh lại số thứ tự (0, 1, 2...),
+        // nên ta phải cập nhật lại data-index của các dòng còn lại
+        // ---------------------------------------------------------
+        const remainingRows = document.querySelectorAll('.cart-item');
+        remainingRows.forEach((item, newIndex) => {
+            item.dataset.index = newIndex; // Gán lại index mới: 0, 1, 2...
+        });
+
+        // 3. Cập nhật badge
         updateCartBadge(data.cart_count);
 
-        // nếu hết sản phẩm → giỏ hàng trống
-        if (data.item_count === 0) {
+        // 4. Nếu hết sản phẩm → giỏ hàng trống
+        if (data.item_count === 0 || remainingRows.length === 0) {
             showEmptyCart();
         } else {
+            // Cập nhật lại tiền nong
             document.getElementById('subtotal').textContent = data.subtotal;
             document.getElementById('total').textContent = data.total;
         }

@@ -8,6 +8,7 @@ use App\Services\WarrantyServiceUser;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
 
+// Thắng
 class InterfaceController extends Controller
 {
     protected $interfaceService;

@@ -12,8 +12,9 @@ class ProductDetailService
 
     public function __construct()
     {
-        // Lấy từ config (đã bao gồm http://localhost:3000/api/v1)
-        $this->baseUrl = config('services.api.url');
+       // SỬA: Nối thêm '/api/v1' vì config mặc định chỉ là localhost:3000
+        $this->baseUrl = config('services.api.url') . '/api/v1';
+        
         $this->timeout = config('services.api.timeout', 30);
     }
 

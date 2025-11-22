@@ -76,6 +76,3 @@
 @endif
 @endsection
 
-@push('scripts')
-<script src="/js/cart.js"></script>
-@endpush

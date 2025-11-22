@@ -11,7 +11,8 @@ class LoginService
 
     public function __construct()
     {
-        $this->authBaseUrl = config('services.api.url', 'http://localhost:3000') . '/auth';
+        // SỬA: Thêm /api/v1 trước /auth
+        $this->authBaseUrl = config('services.api.url', 'http://localhost:3000') . '/api/v1/auth';
     }
 
     public function login($email, $password)
