@@ -7,6 +7,8 @@ use App\Services\ProductDetailService;
 use App\Services\WarrantyServiceUser;
 use Illuminate\Http\Request;
 
+
+// Thắng
 class ProductDetailController extends Controller
 {
     protected $productService;

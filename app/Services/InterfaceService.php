@@ -14,14 +14,12 @@ class InterfaceService
 
     public function __construct()
     {
-        // Lấy URL từ config (đã map với .env API_URL)
-        // Giá trị trong .env đã là: http://localhost:3000/api/v1
-        $this->baseUrl = config('services.api.url');
+        // SỬA: Nối thêm '/api/v1'
+        $this->baseUrl = config('services.api.url') . '/api/v1';
 
-        // Auth URL sẽ là .../api/v1/auth
+        // Auth URL sẽ tự động đúng: .../api/v1/auth
         $this->authBaseUrl = $this->baseUrl . '/auth';
 
-        // Lấy timeout và verify từ .env
         $this->timeout = config('services.api.timeout', 10);
         $this->verify = config('services.api.verify', false);
     }

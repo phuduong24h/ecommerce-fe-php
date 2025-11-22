@@ -13,14 +13,18 @@ class AddCartService
 
     public function __construct()
     {
-        // Lấy trực tiếp từ config, không cần nối '/api/v1' nữa vì trong .env đã có rồi
+        // Lấy URL gốc: http://localhost:3000
         $baseUrl = config('services.api.url');
-        $this->cartBaseUrl = $baseUrl . '/cart';
+        
+        // --- SỬA DÒNG NÀY ---
+        // Phải nối thêm /api/v1/cart để đúng đường dẫn backend
+        $this->cartBaseUrl = $baseUrl . '/api/v1/cart';
 
         $this->timeout = config('services.api.timeout', 30);
         $this->verify = config('services.api.verify', false);
     }
 
+    // ... Giữ nguyên các hàm getHttp, getCart, updateCart bên dưới ...
     protected function getHttp()
     {
         return Http::timeout($this->timeout)->withOptions(['verify' => $this->verify]);
@@ -33,13 +37,19 @@ class AddCartService
                 return ['success' => false, 'message' => 'Chưa đăng nhập'];
             }
 
-            // Dùng token của user đang đăng nhập (Session)
+            // Gọi GET tới http://localhost:3000/api/v1/cart
             $response = $this->getHttp()
                             ->withToken(session('user_token'))
                             ->get($this->cartBaseUrl);
 
             $json = $response->json();
-            if ($response->failed() || !$json['success']) {
+            
+            // Log để debug nếu vẫn lỗi
+            if ($response->failed()) {
+                Log::error('API Get Cart Failed:', ['status' => $response->status(), 'body' => $response->body()]);
+            }
+
+            if ($response->failed() || !($json['success'] ?? false)) {
                 return ['success' => false, 'message' => 'Không thể lấy giỏ hàng'];
             }
 
@@ -60,12 +70,18 @@ class AddCartService
 
             $body = ['cart' => $cartArray];
 
+            // Gọi PUT tới http://localhost:3000/api/v1/cart
             $response = $this->getHttp()
                             ->withToken(session('user_token'))
                             ->put($this->cartBaseUrl, $body);
 
             $json = $response->json();
-            if ($response->failed() || !$json['success']) {
+            
+            if ($response->failed()) {
+                Log::error('API Update Cart Failed:', ['status' => $response->status(), 'body' => $response->body()]);
+            }
+
+            if ($response->failed() || !($json['success'] ?? false)) {
                 return ['success' => false, 'message' => 'Không thể cập nhật giỏ hàng'];
             }
 
