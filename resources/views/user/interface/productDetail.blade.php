@@ -5,21 +5,33 @@
 @section('content')
 
 @php
-    // 1. LOGIC XỬ LÝ ẢNH
-    $imageUrl = 'https://via.placeholder.com/500?text=No+Image';
-    if (!empty($product['HinhAnh'])) {
-        $imageUrl = $product['HinhAnh'];
-    } elseif (!empty($product['image'])) {
-        $imageUrl = $product['image'];
-    } elseif (!empty($product['images']) && is_array($product['images']) && count($product['images']) > 0) {
-        $firstImage = $product['images'][0];
-        $imageUrl = is_array($firstImage) ? ($firstImage['url'] ?? $firstImage) : $firstImage;
+    // 1. LOGIC XỬ LÝ ẢNH (Hỗ trợ nhiều ảnh)
+    $galleryImages = [];
+
+    // Ưu tiên lấy mảng 'images'
+    if (!empty($product['images']) && is_array($product['images'])) {
+        foreach($product['images'] as $img) {
+            // Xử lý trường hợp ảnh là object hoặc string
+            $url = is_array($img) ? ($img['url'] ?? '') : $img;
+            if($url) $galleryImages[] = $url;
+        }
+    }
+    // Fallback nếu có trường 'image' đơn lẻ
+    elseif (!empty($product['image'])) {
+        $galleryImages[] = $product['image'];
+    } elseif (!empty($product['HinhAnh'])) {
+        $galleryImages[] = $product['HinhAnh'];
     }
 
-    // 2. LOGIC XỬ LÝ BIẾN THỂ (VARIANTS)
+    // Nếu không có ảnh nào, dùng placeholder
+    if (empty($galleryImages)) {
+        $galleryImages[] = 'https://via.placeholder.com/500?text=No+Image';
+    }
+
+    // 2. LOGIC BIẾN THỂ
     $variants = $product['variants'] ?? [];
-    $basePrice = $product['price'] ?? 0; // Giá gốc
     $hasVariants = count($variants) > 0;
+    $basePrice = $product['price'] ?? 0;
 
     // Mặc định chọn variant đầu tiên
     $defaultVariantPrice = $hasVariants ? ($variants[0]['price'] ?? 0) : 0;
@@ -43,13 +55,43 @@
 
         <div class="grid grid-cols-1 md:grid-cols-2 gap-10">
 
-            {{-- CỘT TRÁI: ẢNH SẢN PHẨM --}}
-            <div class="flex flex-col items-center">
-                <div class="w-full aspect-square bg-gray-100 rounded-2xl overflow-hidden shadow-sm relative group">
-                    <img src="{{ $imageUrl }}"
+            {{-- CỘT TRÁI: SLIDER ẢNH --}}
+            <div class="flex flex-col">
+                {{-- Ảnh Chính --}}
+                <div class="relative w-full aspect-square bg-gray-100 rounded-2xl overflow-hidden shadow-sm group border border-gray-200">
+
+                    {{-- Hình ảnh --}}
+                    <img id="main-image"
+                         src="{{ $galleryImages[0] }}"
                          alt="{{ $name }}"
-                         class="w-full h-full object-cover object-center group-hover:scale-105 transition-transform duration-500">
+                         class="w-full h-full object-contain p-4 transition-transform duration-500">
+
+                    {{-- Nút Prev (Chỉ hiện nếu có > 1 ảnh) --}}
+                    @if(count($galleryImages) > 1)
+                        <button onclick="changeImage(-1)"
+                                class="absolute left-2 top-1/2 -translate-y-1/2 bg-white/80 hover:bg-white text-gray-800 p-3 rounded-full shadow-md transition-all opacity-0 group-hover:opacity-100 focus:outline-none hover:scale-110 z-10">
+                            <i class="fas fa-chevron-left"></i>
+                        </button>
+
+                        <button onclick="changeImage(1)"
+                                class="absolute right-2 top-1/2 -translate-y-1/2 bg-white/80 hover:bg-white text-gray-800 p-3 rounded-full shadow-md transition-all opacity-0 group-hover:opacity-100 focus:outline-none hover:scale-110 z-10">
+                            <i class="fas fa-chevron-right"></i>
+                        </button>
+                    @endif
                 </div>
+
+                {{-- Thumbnails (Ảnh nhỏ bên dưới) --}}
+                @if(count($galleryImages) > 1)
+                <div class="flex mt-4 gap-3 overflow-x-auto pb-2 justify-center">
+                    @foreach($galleryImages as $index => $img)
+                        <button onclick="setImage({{ $index }})"
+                                class="thumbnail-btn w-20 h-20 border-2 rounded-lg overflow-hidden flex-shrink-0 transition-all
+                                {{ $index === 0 ? 'border-cyan-500 ring-2 ring-cyan-200' : 'border-transparent hover:border-gray-300' }}">
+                            <img src="{{ $img }}" class="w-full h-full object-cover">
+                        </button>
+                    @endforeach
+                </div>
+                @endif
             </div>
 
             {{-- CỘT PHẢI: THÔNG TIN --}}
@@ -71,7 +113,7 @@
                     <span class="text-gray-500 text-sm ml-2">({{ $rating }} / 5)</span>
                 </div>
 
-                {{-- GIÁ VÀ KHO (Có ID để JS cập nhật) --}}
+                {{-- GIÁ VÀ KHO --}}
                 <div class="flex items-center space-x-4 mb-6">
                     <span id="display-price" class="text-2xl font-bold text-cyan-600">
                         ${{ number_format($currentPrice, 2) }}
@@ -85,21 +127,22 @@
                     </span>
                 </div>
 
-                {{-- KHU VỰC CHỌN VARIANT (HIỂN THỊ NẾU CÓ) --}}
-                {{-- Chọn Variant --}}
+                {{-- CHỌN VARIANT --}}
                 @if($hasVariants)
-                <div class="mb-6">
-                    <h3 class="text-sm font-bold mb-2">Tùy chọn:</h3>
+                <div class="mb-6 border-t border-b border-gray-100 py-4">
+                    <h3 class="text-sm font-bold text-gray-900 mb-3">
+                        {{ $variants[0]['name'] ?? 'Tùy chọn' }}:
+                    </h3>
                     <div class="flex flex-wrap gap-2">
                         @foreach($variants as $index => $variant)
                             @php
-                                // Hiển thị số tiền cộng thêm (VD: +$500)
                                 $vp = $variant['price'] ?? 0;
                                 $label = $vp > 0 ? " (+$" . number_format($vp) . ")" : "";
                             @endphp
                             <button
-                                class="variant-btn px-4 py-2 border rounded-lg text-sm transition-all
-                                {{ $index === 0 ? 'border-cyan-500 bg-cyan-50 text-cyan-700' : 'border-gray-200 text-gray-600 hover:border-cyan-300' }}"
+                                type="button"
+                                class="variant-btn px-4 py-2 border rounded-lg text-sm font-medium transition-all duration-200
+                                {{ $index === 0 ? 'border-cyan-500 bg-cyan-50 text-cyan-700 ring-1 ring-cyan-500' : 'border-gray-200 text-gray-600 hover:border-cyan-300 hover:text-cyan-600' }}"
                                 onclick="selectVariant(this, {{ json_encode($variant) }})"
                             >
                                 {{ $variant['value'] }} <span class="text-xs opacity-70">{{ $label }}</span>
@@ -113,7 +156,7 @@
                     {{ $description }}
                 </p>
 
-                {{-- Khối Bảo Hành --}}
+                {{-- Bảo hành --}}
                 <div class="bg-blue-50 border border-blue-100 rounded-xl p-4 mb-6 flex items-start space-x-3">
                     <div class="bg-blue-500 text-white rounded-full w-8 h-8 flex items-center justify-center flex-shrink-0 mt-1">
                         <i class="fas fa-shield-alt text-xs"></i>
@@ -145,48 +188,90 @@
     </div>
 </div>
 
-{{-- SCRIPT XỬ LÝ CHỌN BIẾN THỂ --}}
 <script>
+    // ==========================================
+    // 1. LOGIC SLIDER ẢNH (MỚI)
+    // ==========================================
+    const galleryImages = @json($galleryImages);
+    let currentImageIndex = 0;
+    const mainImage = document.getElementById('main-image');
+    const thumbnails = document.querySelectorAll('.thumbnail-btn');
+
+    function updateGalleryUI() {
+        // Đổi ảnh chính
+        mainImage.src = galleryImages[currentImageIndex];
+
+        // Highlight thumbnail
+        thumbnails.forEach((thumb, idx) => {
+            if (idx === currentImageIndex) {
+                thumb.classList.add('border-cyan-500', 'ring-2', 'ring-cyan-200');
+                thumb.classList.remove('border-transparent');
+            } else {
+                thumb.classList.remove('border-cyan-500', 'ring-2', 'ring-cyan-200');
+                thumb.classList.add('border-transparent');
+            }
+        });
+    }
+
+    // Hàm gọi khi bấm nút Prev/Next
+    function changeImage(direction) {
+        currentImageIndex += direction;
+
+        // Xử lý vòng lặp (đang ở cuối bấm next về đầu, đang ở đầu bấm prev về cuối)
+        if (currentImageIndex >= galleryImages.length) {
+            currentImageIndex = 0;
+        } else if (currentImageIndex < 0) {
+            currentImageIndex = galleryImages.length - 1;
+        }
+
+        updateGalleryUI();
+    }
+
+    // Hàm gọi khi bấm vào Thumbnail
+    function setImage(index) {
+        currentImageIndex = index;
+        updateGalleryUI();
+    }
+
+
+    // ==========================================
+    // 2. LOGIC BIẾN THỂ & GIÁ (CŨ ĐÃ SỬA)
+    // ==========================================
     const basePrice = {{ $basePrice }};
     let selectedVariant = @json($hasVariants ? $variants[0] : null);
 
     function selectVariant(btn, variantData) {
-        // 1. UI Button
         document.querySelectorAll('.variant-btn').forEach(b => {
-            b.className = 'variant-btn px-4 py-2 border border-gray-200 rounded-lg text-sm text-gray-600 hover:border-cyan-300 transition-all';
+            b.className = 'variant-btn px-4 py-2 border border-gray-200 rounded-lg text-sm font-medium text-gray-600 hover:border-cyan-300 hover:text-cyan-600 transition-all duration-200';
         });
-        btn.className = 'variant-btn px-4 py-2 border rounded-lg text-sm transition-all border-cyan-500 bg-cyan-50 text-cyan-700';
+        btn.className = 'variant-btn px-4 py-2 border rounded-lg text-sm font-medium transition-all duration-200 border-cyan-500 bg-cyan-50 text-cyan-700 ring-1 ring-cyan-500';
 
-        // 2. Update Biến
         selectedVariant = variantData;
-
-        // 3. Tính Giá (Base + Variant)
         const finalPrice = basePrice + (variantData.price || 0);
 
-        // 4. Update Hiển thị
-        const formatter = new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' });
+        const formatter = new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', minimumFractionDigits: 2 });
         document.getElementById('display-price').innerText = formatter.format(finalPrice);
 
-        const stockBadge = document.getElementById('stock-badge');
+        const stockText = variantData.stock > 0 ? `Còn Hàng (${variantData.stock})` : 'Hết Hàng';
+        document.getElementById('display-stock-text').innerText = stockText;
+
+        const badge = document.getElementById('stock-badge');
         const cartBtn = document.getElementById('add-to-cart-btn');
 
         if(variantData.stock > 0) {
-            stockBadge.innerText = `Còn Hàng (${variantData.stock})`;
-            stockBadge.className = "px-3 py-1 rounded-full text-xs font-semibold bg-green-100 text-green-700";
+            badge.className = "bg-green-100 text-green-700 px-3 py-1 rounded-full text-xs font-semibold flex items-center";
             cartBtn.disabled = false;
             cartBtn.innerHTML = '<i class="fas fa-shopping-cart"></i> Thêm Vào Giỏ';
-            cartBtn.classList.remove('bg-gray-400');
+            cartBtn.classList.remove('bg-gray-400', 'cursor-not-allowed');
             cartBtn.classList.add('bg-blue-500', 'hover:bg-blue-600');
         } else {
-            stockBadge.innerText = "Hết Hàng";
-            stockBadge.className = "px-3 py-1 rounded-full text-xs font-semibold bg-red-100 text-red-700";
+            badge.className = "bg-red-100 text-red-700 px-3 py-1 rounded-full text-xs font-semibold flex items-center";
             cartBtn.disabled = true;
             cartBtn.innerHTML = "Tạm Hết Hàng";
             cartBtn.classList.remove('bg-blue-500', 'hover:bg-blue-600');
-            cartBtn.classList.add('bg-gray-400');
+            cartBtn.classList.add('bg-gray-400', 'cursor-not-allowed');
         }
 
-        // 5. Update Data cho nút Add Cart
         updateAddToCartData();
     }
 
@@ -196,8 +281,6 @@
 
         if (selectedVariant) {
             productData.selected_variant = selectedVariant;
-            // Không sửa productData.price gốc ở đây để tránh lỗi logic,
-            // controller sẽ tự tính base + variant.price
         }
         btn.dataset.productJson = JSON.stringify(productData);
     }

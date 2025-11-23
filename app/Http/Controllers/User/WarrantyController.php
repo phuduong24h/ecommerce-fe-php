@@ -4,219 +4,206 @@ namespace App\Http\Controllers\User;
 
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Http;
-use App\Services\ProductSerialService;
-//văn hải
+use App\Services\WarrantyServiceUser;
+use App\Services\SerialServiceUser;
+use App\Services\WarrantyPolicyServiceUser;
+use App\Services\OrderServiceUser;
+use Illuminate\Pagination\LengthAwarePaginator;
 
 class WarrantyController extends Controller
 {
-    // --- HELPER: Lấy dữ liệu GET với Token User ---
-    private function apiGet($endpoint)
-    {
-        try {
-            $token = session('user_token');
-            $baseUrl = config('services.api.url') . '/api/v1';
-            $res = Http::withToken($token)->timeout(10)->get($baseUrl . '/' . ltrim($endpoint, '/'));
-            return $res->ok() ? $res->json() : null;
-        } catch (\Throwable $e) {
-            return null;
-        }
+    protected $warrantyServiceUser;
+    protected $serialServiceUser;
+    protected $warrantyPolicyServiceUser;
+    protected $orderServiceUser;
+
+    public function __construct(
+        WarrantyServiceUser $warrantyServiceUser,
+        SerialServiceUser $serialServiceUser,
+        WarrantyPolicyServiceUser $warrantyPolicyServiceUser,
+        OrderServiceUser $orderServiceUser
+    ) {
+        $this->warrantyServiceUser = $warrantyServiceUser;
+        $this->serialServiceUser = $serialServiceUser;
+        $this->warrantyPolicyServiceUser = $warrantyPolicyServiceUser;
+        $this->orderServiceUser = $orderServiceUser;
     }
 
     /**
-     * --- HELPER QUAN TRỌNG: LẤY HOẶC TẠO SERIAL ---
-     * Giúp hiển thị serial cho cả đơn hàng cũ chưa có dữ liệu
+     * Trang chính bảo hành
      */
-    private function getProductSerial($item, $orderId)
+    public function index(Request $request)
     {
+        $orders = $this->orderServiceUser->getMyOrders();
+        $claimList = $this->warrantyServiceUser->getMyClaims();
 
-        $serialService = new ProductSerialService();
+        // Lấy tất cả serial của user
+        $allSerials = $this->serialServiceUser->getMySerials();
 
-        // 1. Ưu tiên serial trong productSnapshot
-        if (!empty($item['productSnapshot']['sku'])) {
-            return $item['productSnapshot']['sku'];
+        // Xử lý userSerials và purchased (giữ nguyên đoạn code của bạn) ...
+        $userSerials = [];
+        foreach ($orders as $order) {
+            foreach ($order["items"] as $item) {
+                $serialsForItem = array_filter($allSerials, fn($s) => $s['productId'] === $item['productId'] && $s['orderId'] === $order['id']);
+                foreach ($serialsForItem as $s) {
+                    $userSerials[] = [
+                        "productName" => $item["productSnapshot"]["name"] ?? $item["name"],
+                        "serialId" => $s['serialId'],
+                        "serialCode" => $s['serialCode'],
+                        "productId" => $item['productId'],
+                        "orderId" => $order['id'],
+                        "purchasedAt" => date("d/m/Y", strtotime($order["createdAt"]))
+                    ];
+                }
+            }
         }
 
-        // 2. Ưu tiên serial đã lưu trong item
-        if (!empty($item['productSerial'])) {
-            return $item['productSerial'];
-        }
-
-        // 3. Kiểm tra serial trong backend API
-        $allSerials = $serialService->getAllSerials();
-        $productSerials = array_filter($allSerials, fn($s) => ($s['productId'] ?? null) === ($item['productId'] ?? null));
-        if (!empty($productSerials)) {
-            // Lấy serial mới nhất
-            usort($productSerials, fn($a, $b) => strtotime($b['updatedAt']) <=> strtotime($a['updatedAt']));
-            return $productSerials[0]['serial'] ?? 'UNKNOWN';
-        }
-
-        // 4. Nếu không có serial thật → trả UNKNOWN
-        return 'UNKNOWN';
-    }
-
-    /* ======================================================
-        TRANG CHÍNH BẢO HÀNH
-    ====================================================== */
-    public function index()
-    {
-        // 1. Lấy Orders
-        $orderRes = $this->apiGet("orders/me");
-        $orders = $orderRes["data"] ?? [];
-
-        // 2. Lấy Claims
-        $claimRes = $this->apiGet("warranty/me");
-        $claimList = $claimRes["data"] ?? [];
-
-        // Map claim mới nhất
         $latestClaimBySerial = [];
         foreach ($claimList as $c) {
-            $s = $c['productSerial'];
+            $s = $c['productSerial'] ?? '';
             if (!isset($latestClaimBySerial[$s]) || strtotime($c["createdAt"]) > strtotime($latestClaimBySerial[$s]["createdAt"])) {
                 $latestClaimBySerial[$s] = $c;
             }
         }
 
-        // 3. Ghép danh sách
         $purchased = [];
-
         foreach ($orders as $order) {
             foreach ($order["items"] as $item) {
-
-                // DÙNG HELPER ĐỂ LẤY SERIAL (THẬT HOẶC ẢO)
-                $serial = $this->getProductSerial($item, $order["id"]);
-
+                $serialsForItem = array_filter($allSerials, fn($s) => $s['productId'] === $item['productId'] && $s['orderId'] === $order['id']);
+                $serial = !empty($serialsForItem) ? array_values($serialsForItem)[0]['serialId'] : null;
                 $purchased[] = [
                     "orderId" => $order["id"],
                     "productId" => $item["productId"],
                     "productName" => $item["productSnapshot"]["name"] ?? $item["name"],
                     "quantity" => $item["quantity"],
                     "purchasedAt" => date("d/m/Y", strtotime($order["createdAt"])),
-                    "serial" => $serial,
+                    "serialCode" => !empty($serialsForItem) ? array_values($serialsForItem)[0]['serialCode'] : null,
                     "latestClaim" => $latestClaimBySerial[$serial] ?? null
                 ];
             }
         }
 
-        return view("user.warranty.warranty", compact("purchased", "claimList"));
+        // ===== Thêm phần phân trang =====
+        $allClaims = collect($claimList);
+        $perPage = 5;
+        $page = $request->get('page', 1);
+        $paginatedClaims = new LengthAwarePaginator(
+            $allClaims->forPage($page, $perPage),
+            $allClaims->count(),
+            $perPage,
+            $page,
+            ['path' => $request->url(), 'query' => $request->query()]
+        );
+
+        return view("user.warranty.warranty", [
+            "claims" => $paginatedClaims,
+            "userSerials" => $userSerials,
+            "purchased" => $purchased,
+        ]);
     }
 
-    /* ======================================================
-        KIỂM TRA SERIAL
-    ====================================================== */
+    /**
+     * Kiểm tra serial
+     */
+    /**
+     * Kiểm tra serial và bảo hành
+     */
     public function checkSerial(Request $request)
     {
         $request->validate(["serial_number" => "required"]);
-        $serial = trim($request->serial_number); // Xóa khoảng trắng thừa
+        $serialCode = trim($request->serial_number);
 
-        $orderRes = $this->apiGet("orders/me");
-        $orders = $orderRes["data"] ?? [];
+        // Gọi service để check bảo hành
+        $result = $this->serialServiceUser->checkSerialWarranty($serialCode);
 
-        $foundProduct = null;
-
-        // Tìm trong đơn hàng (dùng logic getProductSerial để so sánh)
-        foreach ($orders as $order) {
-            foreach ($order["items"] as $item) {
-
-                // Tính toán serial của item này
-                $itemSerial = $this->getProductSerial($item, $order["id"]);
-
-                if ($itemSerial === $serial) {
-                    $foundProduct = [
-                        "name" => $item["productSnapshot"]["name"] ?? $item["name"],
-                        "serial" => $serial,
-                        "orderId" => $order["id"],
-                        "purchasedAt" => date("d/m/Y", strtotime($order["createdAt"])),
-                    ];
-                    break 2;
-                }
-            }
+        if (!($result['success'] ?? false)) {
+            return back()->withErrors(["msg" => $result['message'] ?? 'Không thể kiểm tra bảo hành']);
         }
 
-        if (!$foundProduct) {
-            return back()->withErrors(["msg" => "Serial không tồn tại trong lịch sử mua hàng của bạn."]);
+        $data = $result['data'] ?? null;
+
+        if (!$data) {
+            return back()->withErrors(["msg" => "Không tìm thấy thông tin bảo hành"]);
         }
 
-        // Lấy lịch sử bảo hành
-        $claimRes = $this->apiGet("warranty/me");
-        $claimList = $claimRes["data"] ?? [];
+        // Map trạng thái sang tiếng Việt
+        $statusVN = match ($data['status'] ?? '') {
+            'VALID' => 'Còn hạn',
+            'EXPIRED' => 'Hết hạn',
+            default => 'Không xác định',
+        };
 
-        $claimsForSerial = collect($claimList)
-            ->where("productSerial", $serial)
-            ->sortByDesc("createdAt")
-            ->values()
-            ->toArray();
+        $productInfo = [
+            'serialCode' => $data['serial'],
+            'productName' => $data['productName'],
+            'soldAt' => date("d/m/Y", strtotime($data['soldAt'])),
+            'warrantyStatus' => $statusVN,
+            'daysLeft' => max(0, $data['daysLeft'] ?? 0),
+        ];
 
-        return back()
-            ->with("productInfo", $foundProduct)
-            ->with("serialClaims", $claimsForSerial);
+        return back()->with("productInfo", $productInfo);
     }
-
-    /* ======================================================
-        GỬI YÊU CẦU BẢO HÀNH
-    ====================================================== */
+    /**
+     * Submit yêu cầu bảo hành
+     */
     public function submitClaim(Request $request)
     {
         $request->validate([
             "serial_number" => "required",
-            "description" => "required",
+            "description" => "required|string",
         ]);
 
-        $serial = trim($request->serial_number);
+        $serialCode = $request->serial_number;
+        $description = $request->description;
 
-        // 1. Tìm sản phẩm gốc từ Orders
-        $orderRes = $this->apiGet("orders/me");
-        $orders = $orderRes["data"] ?? [];
+        $allSerials = $this->serialServiceUser->getMySerials();
+        $serial = collect($allSerials)->firstWhere('serialCode', $serialCode);
 
-        $match = null;
+        if (!$serial || empty($serial['productId']) || empty($serial['orderId'])) {
+            return back()->withErrors(["msg" => "Serial không hợp lệ hoặc thiếu thông tin sản phẩm/đơn hàng"]);
+        }
+
+        $payload = [
+            "productName" => $serial['productName'] ?? 'Sản phẩm',
+            "productSerial" => $serial['serialCode'],
+            "issueDesc" => $description,
+            "productId" => $serial['productId'],
+            "orderId" => $serial['orderId'],
+        ];
+
+        $result = $this->warrantyServiceUser->submitClaim($payload);
+
+        if ($result['success'] ?? false) {
+            return back()->with("success", "Gửi yêu cầu bảo hành thành công!");
+        }
+
+        return back()->withErrors(["msg" => $result['message'] ?? "Lỗi khi gửi yêu cầu bảo hành"]);
+    }
+
+    /**
+     * Trang tạo claim mới
+     */
+    public function create()
+    {
+        $orders = $this->orderServiceUser->getMyOrders(); // Lấy tất cả đơn hàng của user
+        $userSerials = [];
 
         foreach ($orders as $order) {
             foreach ($order["items"] as $item) {
-
-                // So sánh bằng Helper
-                $itemSerial = $this->getProductSerial($item, $order["id"]);
-
-                if ($itemSerial === $serial) {
-                    $match = [
-                        "orderId" => $order["id"],
-                        "productId" => $item["productId"],
+                $serial = $this->serialServiceUser->getSerialForItem($item, $order["id"]);
+                if ($serial) {
+                    $userSerials[] = [
                         "productName" => $item["productSnapshot"]["name"] ?? $item["name"],
-                        "purchasedAt" => $order["createdAt"]
+                        "serialId" => $serial,
+                        "serialCode" => $serial['serialCode'],
+                        "productId" => $item['productId'],
+                        "orderId" => $order["id"],
+                        "purchasedAt" => $order["createdAt"],
                     ];
-                    break 2;
                 }
             }
         }
 
-        if (!$match) {
-            return back()->withErrors(["msg" => "Serial không hợp lệ!"]);
-        }
-
-        // 2. Gửi yêu cầu lên Backend
-        // Backend Node.js sẽ lưu serial này (dù là serial ảo "OLD-...") vào DB
-        $payload = [
-            "orderId" => $match["orderId"],
-            "productId" => $match["productId"],
-            "productName" => $match["productName"],
-            "productSerial" => $serial,
-            "purchasedAt" => $match["purchasedAt"],
-            "issueDesc" => $request->description,
-            "images" => [],
-        ];
-
-        $token = session('user_token');
-        $url = config('services.api.url') . '/api/v1/warranty/claim';
-
-        try {
-            $res = Http::withToken($token)->post($url, $payload);
-
-            if ($res->successful()) {
-                return back()->with("success", "Gửi yêu cầu bảo hành thành công!");
-            } else {
-                return back()->withErrors(["msg" => "Lỗi: " . ($res->json()['message'] ?? 'Backend từ chối yêu cầu')]);
-            }
-        } catch (\Exception $e) {
-            return back()->withErrors(["msg" => "Lỗi kết nối: " . $e->getMessage()]);
-        }
+        return view('user.warranty.create', compact('userSerials'));
     }
 }

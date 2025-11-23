@@ -7,7 +7,7 @@
     <!-- Header -->
     <div>
         <h1 class="text-2xl font-bold tracking-tight">Quản Lý Bổ Sung</h1>
-        <p class="text-muted-foreground">Quản lý danh mục, khuyến mãi, trung tâm bảo hành, serial, và nhật ký</p>
+        <p class="text-muted-foreground">Quản lý danh mục, khuyến mãi, trung tâm bảo hành, serial</p>
     </div>
 
     <!-- Flash Messages -->
@@ -52,7 +52,7 @@
             </div>
         </template>
 
-        {{-- Logs --}}
+        <!-- {{-- Logs --}}
         <template x-if="$store.tab === 'logs' && '{{ session('activeTab') }}' === 'logs'">
             <div x-data="{ open: true }" x-show="open" x-transition
                  x-init="setTimeout(() => open = false, 4000)"
@@ -60,7 +60,7 @@
                 <span>{{ session('success') }}</span>
                 <button @click="open = false" class="font-bold text-indigo-800">&times;</button>
             </div>
-        </template>
+        </template> -->
     </div>
 
     <!-- Tabs -->
@@ -79,9 +79,9 @@
                 <button @click="$store.tab = 'serials'"
                         :class="{ 'border-b-2 border-cyan-500 text-foreground font-medium': $store.tab === 'serials' }"
                         class="px-4 py-3 text-sm hover:text-foreground transition-colors text-center">Serial</button>
-                <button @click="$store.tab = 'logs'"
+                <!-- <button @click="$store.tab = 'logs'"
                         :class="{ 'border-b-2 border-indigo-500 text-foreground font-medium': $store.tab === 'logs' }"
-                        class="px-4 py-3 text-sm hover:text-foreground transition-colors text-center">Nhật ký quản trị</button>
+                        class="px-4 py-3 text-sm hover:text-foreground transition-colors text-center">Nhật ký quản trị</button> -->
             </div>
         </div>
 

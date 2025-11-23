@@ -35,9 +35,9 @@
     </div>
 
     <!-- Edit Button -->
-    <div class="mt-8 pt-6 border-t">
+    <!-- <div class="mt-8 pt-6 border-t">
         <button class="px-6 py-3 bg-gradient-to-r from-cyan-500 to-blue-500 text-white rounded-lg font-medium hover:shadow-lg transition-all">
             Chỉnh Sửa Thông Tin
         </button>
-    </div>
+    </div> -->
 </div>

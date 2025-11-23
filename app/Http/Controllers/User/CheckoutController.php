@@ -3,25 +3,25 @@
 namespace App\Http\Controllers\User;
 
 use App\Http\Controllers\Controller;
-use App\Services\AddCartService; // SỬA: Dùng Service này để lấy Cart chuẩn
+use App\Services\AddCartService;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Http; // SỬA: Dùng Http để gọi API User/Order
+use Illuminate\Support\Facades\Http;
 
-// Kim Hải
 class CheckoutController extends Controller
 {
     protected AddCartService $cartService;
 
-    // Inject AddCartService thay vì ApiClientService
     public function __construct(AddCartService $cartService)
     {
         $this->cartService = $cartService;
     }
 
-    // Hiển thị trang checkout
+    /**
+     * Hiển thị trang thanh toán
+     */
     public function index()
     {
-        // 1. Lấy Giỏ Hàng (Dùng Service chuẩn có User Token)
+        // 1. Lấy Giỏ Hàng từ Service (đã bao gồm việc gọi API lấy cart từ DB)
         $cartRes = $this->cartService->getCart();
         $cart = ($cartRes['success'] ?? false) ? ($cartRes['data'] ?? []) : [];
 
@@ -30,10 +30,8 @@ class CheckoutController extends Controller
             return redirect('/cart')->with('error', 'Giỏ hàng trống, vui lòng thêm sản phẩm!');
         }
 
-        // 2. Lấy Thông Tin User (Dùng Http facade + Token Session)
-        // URL: http://localhost:3000/api/v1/users/me
+        // 2. Lấy Thông Tin User để hiển thị form (Tên, SDT, Địa chỉ...)
         $userUrl = config('services.api.url') . '/api/v1/users/me';
-        
         try {
             $userRes = Http::withToken(session('user_token'))->get($userUrl);
             $user = $userRes->json()['data'] ?? [];
@@ -41,16 +39,18 @@ class CheckoutController extends Controller
             $user = [];
         }
 
-        // 3. Tính toán
+        // 3. Tính toán tổng tiền hàng
         $subtotal = collect($cart)->sum(fn ($i) => $i['price'] * $i['quantity']);
 
         return view('user.checkout.index', compact('cart', 'user', 'subtotal'));
     }
 
-    // Gửi order sang server NodeJS
+    /**
+     * Xử lý đặt hàng (Gửi API sang Node.js)
+     */
     public function submit(Request $request)
     {
-        // 1. Lấy lại giỏ hàng để đảm bảo dữ liệu mới nhất
+        // 1. Lấy lại giỏ hàng để đảm bảo dữ liệu mới nhất (tránh hack giá ở frontend)
         $cartRes = $this->cartService->getCart();
         $cart = ($cartRes['success'] ?? false) ? ($cartRes['data'] ?? []) : [];
 
@@ -61,46 +61,65 @@ class CheckoutController extends Controller
             ]);
         }
 
+        // 2. Tính toán lại tổng tiền
         $subtotal = collect($cart)->sum(fn ($i) => $i['price'] * $i['quantity']);
-        $total = $subtotal + 9.6; // Cộng phí vận chuyển/thuế nếu có
+        $total = $subtotal + 9.6; // Cộng phí vận chuyển/thuế cố định (như trong View)
 
-        // 2. Convert cart → order items (Format Backend yêu cầu)
+        // 3. Chuẩn bị dữ liệu items gửi sang Backend
         $items = collect($cart)->map(fn ($i) => [
             "productId" => $i["productId"],
-            "name" => $i["name"], // Backend cần field này nếu snapshot
+            "name" => $i["name"] ?? "Unknown", // Backend có thể cần tên để lưu snapshot
             "price" => $i["price"],
             "quantity" => $i["quantity"],
-             "variant" => $i["variant"] ?? null, // Bỏ comment nếu backend cần (sửa cái này)
+            "variant" => $i["variant"] ?? null,
         ])->toArray();
 
+        // 4. Chuẩn bị Payload
         $payload = [
             "items" => $items,
+            "totalAmount" => $total, // Gửi kèm tổng tiền để backend tham khảo
             "payment" => [
-                "method" => $request->payment_method ?? 'CASH', // Default CASH nếu null
+                "method" => $request->payment_method ?? 'CASH',
                 "status" => "PENDING",
                 "amount" => $total
             ],
+            // Nếu bạn có form nhập địa chỉ riêng thì lấy từ $request->address
             "shipment" => [
-                "address" => $request->address ?? "Địa chỉ mặc định", // Cần lấy từ form nếu có
+                "address" => $request->address ?? "Địa chỉ mặc định của User", 
                 "status" => "PENDING"
-            ],
-            "totalAmount" => $total
+            ]
         ];
 
-        // 3. Gửi API tạo đơn hàng (Kèm Token User)
-        $orderUrl = config('services.api.url') . '/api/v1/orders';
+        // API URL Tạo đơn hàng
+        $createOrderUrl = config('services.api.url') . '/api/v1/orders/create';
 
         try {
+            // Gọi API tạo đơn
             $response = Http::withToken(session('user_token'))
-                            ->post($orderUrl, $payload);
+                            ->post($createOrderUrl, $payload);
 
             $res = $response->json();
 
-            // 4. Xử lý kết quả
+            // Kiểm tra kết quả
             if ($response->successful() && ($res['success'] ?? false)) {
                 
-                // Quan trọng: Xóa giỏ hàng trong Session PHP sau khi mua thành công
-                // (Backend NodeJS thường tự xóa trong DB, nhưng Frontend cần cập nhật UI)
+                // =================================================================
+                // 🔴 BƯỚC 5 QUAN TRỌNG: GỌI API XÓA GIỎ HÀNG THỦ CÔNG
+                // =================================================================
+                // Do Backend (orders.ts) không tự xóa giỏ hàng, ta gọi thêm API này
+                // để set giỏ hàng trong Database về rỗng [].
+                
+                $clearCartUrl = config('services.api.url') . '/api/v1/users/me/cart';
+                
+                try {
+                    Http::withToken(session('user_token'))
+                        ->put($clearCartUrl, ['cart' => []]);
+                } catch (\Exception $ex) {
+                    // Nếu xóa giỏ thất bại cũng không sao, đơn đã tạo rồi. 
+                    // Có thể log lại lỗi này nếu cần.
+                }
+
+                // Xóa session giỏ hàng phía Laravel
                 session()->forget('user.cart'); 
                 
                 return response()->json([
@@ -111,7 +130,7 @@ class CheckoutController extends Controller
             } else {
                 return response()->json([
                     'success' => false, 
-                    'message' => $res['message'] ?? 'Lỗi tạo đơn hàng từ Backend'
+                    'message' => $res['message'] ?? 'Lỗi tạo đơn hàng từ hệ thống'
                 ]);
             }
 
