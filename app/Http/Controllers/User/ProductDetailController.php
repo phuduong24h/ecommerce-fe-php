@@ -24,36 +24,46 @@ class ProductDetailController extends Controller
 
     public function show($id)
     {
-        // 1. Gọi API LẤY MỘT LẦN DUY NHẤT (QUAN TRỌNG)
-        $result = $this->productService->getProductById($id);
+        // 1. Lấy sản phẩm
+        $product = $this->productService->getProductById($id);
 
-        // Kiểm tra lỗi
-        if (!$result || empty($result['product'])) {
+        if (!$product) {
             return redirect()->route('home')->with('error', 'Sản phẩm không tồn tại.');
         }
 
-        // Tách dữ liệu ra các biến
-        $productData = $result['product'];
-        $responseTime = $result['time'];     // Lấy thời gian từ lần gọi duy nhất này
-        $isCached = $result['is_cached'];    // Lấy trạng thái cache từ lần gọi duy nhất này
-
-        // 2. Logic Bảo hành (Sử dụng $productData)
+        // 2. Lấy danh sách bảo hành
         $policies = $this->warrantyService->getAllPolicies();
-        $wId = isset($productData['warrantyPolicyId']) ? trim((string)$productData['warrantyPolicyId']) : 'KHÔNG CÓ ID';
+
+        // 3. Lấy ID bảo hành từ sản phẩm
+        $wId = isset($product['warrantyPolicyId']) ? trim((string)$product['warrantyPolicyId']) : 'KHÔNG CÓ ID';
+
+        // ============================================================
+        // 🔴 BƯỚC DEBUG QUAN TRỌNG (XÓA SAU KHI TÌM RA LỖI)
+        // ============================================================
+        // Hãy chạy trang web, nếu thấy màn hình đen code, hãy chụp ảnh gửi tôi
+        // dd([
+        //     '1. ID Sản Phẩm cần tìm' => $wId,
+        //     '2. Danh sách Bảo Hành lấy về' => $policies,
+        //     '3. Dữ liệu sản phẩm gốc' => $product
+        // ]);
+        // ============================================================
 
         // Giá trị mặc định
         $policyName = 'Bảo hành tiêu chuẩn (Mặc định)';
         $policyCoverage = 'Liên hệ cửa hàng để biết chi tiết.';
         $displayLabel = 'New';
 
-        // 3. Vòng lặp so sánh
+        // 4. Vòng lặp so sánh (Đã thêm log kiểm tra chặt chẽ hơn)
         foreach ($policies as $p) {
+            // Lấy ID của chính sách (xử lý cả trường hợp id và _id)
             $pId = isset($p['id']) ? (string)$p['id'] : (string)($p['_id'] ?? '');
 
+            // So sánh
             if ($pId === $wId) {
                 $policyName = $p['name'];
                 $policyCoverage = $p['coverage'] ?? $policyCoverage;
 
+                // Tính toán nhãn hiển thị
                 $days = intval($p['durationDays']);
                 if ($days >= 365 && $days % 365 == 0) {
                     $years = $days / 365;
@@ -64,24 +74,18 @@ class ProductDetailController extends Controller
                 } else {
                     $displayLabel = $days . ' Days';
                 }
-                break;
+                break; // Tìm thấy rồi thì thoát vòng lặp
             }
         }
+        // 5. Gán dữ liệu vào mảng product
+        $product['warranty_label'] = $displayLabel;
 
-        // 4. Gán dữ liệu bảo hành vào mảng $productData (Sửa lỗi dùng nhầm biến $product)
-        $productData['warranty_label'] = $displayLabel;
-        $productData['warrantyPolicy'] = [
+        // Đảm bảo luôn có mảng warrantyPolicy để View không bị lỗi null
+        $product['warrantyPolicy'] = [
             'name' => $policyName,
             'coverage' => $policyCoverage
         ];
 
-        // --- ĐÃ XÓA ĐOẠN GỌI API LẦN 2 TẠI ĐÂY ---
-
-        // 5. Trả về View
-        return view('user.interface.productDetail', [
-            'product' => $productData,      // Truyền mảng dữ liệu đã xử lý bảo hành
-            'responseTime' => $responseTime,
-            'isCached' => $isCached
-        ]);
+        return view('user.interface.productDetail', compact('product'));
     }
 }

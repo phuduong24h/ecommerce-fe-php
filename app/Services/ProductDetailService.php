@@ -12,37 +12,29 @@ class ProductDetailService
 
     public function __construct()
     {
+       // SỬA: Nối thêm '/api/v1' vì config mặc định chỉ là localhost:3000
         $this->baseUrl = config('services.api.url') . '/api/v1';
+
         $this->timeout = config('services.api.timeout', 30);
     }
 
     public function getProductById($id)
     {
         try {
-            // 1. Bấm giờ bắt đầu
-            $startTime = microtime(true);
-
+            // URL đúng sẽ là: http://localhost:3000/api/v1/products/{id}
+            // Không cần thêm /api/v1 ở đây nữa vì $this->baseUrl đã có rồi
             $response = Http::timeout($this->timeout)->get("{$this->baseUrl}/products/{$id}");
 
-            // 2. Bấm giờ kết thúc & Tính toán (ms)
-            $endTime = microtime(true);
-            $duration = round(($endTime - $startTime) * 1000, 2); // Đổi sang mili-giây
-
             if ($response->successful()) {
-                $json = $response->json();
-
-                // 3. Trả về cả Dữ liệu + Thời gian + Trạng thái Cache
-                return [
-                    'product' => $json['data'],
-                    'time' => $duration,
-                    'is_cached' => $json['cached'] ?? false // Backend bạn đã trả về cờ này rồi
-                ];
+                return $response->json()['data'];
             }
 
-            Log::error("API Error: " . $response->body());
+            // Log lỗi để admin kiểm tra ngầm, không dùng dd() làm gián đoạn người dùng
+            Log::error("API Error (getProductById $id): " . $response->body());
+
             return null;
         } catch (\Exception $e) {
-            Log::error("Exception: " . $e->getMessage());
+            Log::error("Exception (getProductById): " . $e->getMessage());
             return null;
         }
     }
