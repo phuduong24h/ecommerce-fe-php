@@ -70,12 +70,13 @@ class OrderController extends Controller
     /**
      * Xem chi tiết đơn hàng (nếu cần)
      */
-    public function show($id)
+        public function show($id)
     {
-        $order = $this->orderService->getOrderById($id);
+        $orders = $this->orderService->getAllOrders(); // array từ API
+        $order = collect($orders)->firstWhere('id', $id);
 
         if (!$order) {
-            return redirect()->back()->with('error', 'Đơn hàng không tồn tại.');
+            return redirect()->route('admin.orders.index')->with('error', 'Đơn hàng không tồn tại');
         }
 
         return view('admin.orders.show', compact('order'));

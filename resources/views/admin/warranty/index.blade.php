@@ -17,10 +17,10 @@
                 'APPROVED' => ['label' => 'Approved', 'color' => 'emerald', 'lucide' => 'check-circle-big'],
                 'REJECTED' => ['label' => 'Rejected', 'color' => 'red', 'lucide' => 'x-circle-big'],
                 'SCHEDULED' => ['label' => 'Scheduled', 'color' => 'blue', 'lucide' => 'calendar'],
-                'IN_REPAIR' => ['label' => 'In Repair', 'color' => 'sky', 'lucide' => 'refresh-cw'],
-                'REPAIRED' => ['label' => 'Repaired', 'color' => 'cyan', 'lucide' => 'check'],
-                'COMPLETED' => ['label' => 'Completed', 'color' => 'emerald', 'lucide' => 'award'],
-                'CANCELLED' => ['label' => 'Cancelled', 'color' => 'gray', 'lucide' => 'x'],
+                // 'IN_REPAIR' => ['label' => 'In Repair', 'color' => 'sky', 'lucide' => 'refresh-cw'],
+                // 'REPAIRED' => ['label' => 'Repaired', 'color' => 'cyan', 'lucide' => 'check'],
+                // 'COMPLETED' => ['label' => 'Completed', 'color' => 'emerald', 'lucide' => 'award'],
+                // 'CANCELLED' => ['label' => 'Cancelled', 'color' => 'gray', 'lucide' => 'x'],
             ];
 
 

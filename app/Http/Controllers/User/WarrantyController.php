@@ -5,7 +5,7 @@ namespace App\Http\Controllers\User;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Http;
-
+use App\Services\ProductSerialService;
 //văn hải
 
 class WarrantyController extends Controller
@@ -29,21 +29,30 @@ class WarrantyController extends Controller
      */
     private function getProductSerial($item, $orderId)
     {
-        // 1. Ưu tiên lấy Serial thật (nếu đơn mới đã có)
+
+        $serialService = new ProductSerialService();
+
+        // 1. Ưu tiên serial trong productSnapshot
         if (!empty($item['productSnapshot']['sku'])) {
             return $item['productSnapshot']['sku'];
         }
+
+        // 2. Ưu tiên serial đã lưu trong item
         if (!empty($item['productSerial'])) {
             return $item['productSerial'];
         }
 
-        // 2. Nếu là đơn cũ (không có serial), tạo SERIAL ẢO
-        // Format: OLD-{6 ký tự cuối OrderID}-{4 ký tự cuối ProductID}
-        // VD: OLD-a1b2c3-9988
-        $shortOrderId = substr($orderId, -6);
-        $shortProdId  = substr($item['productId'], -4);
-        
-        return strtoupper("OLD-{$shortOrderId}-{$shortProdId}");
+        // 3. Kiểm tra serial trong backend API
+        $allSerials = $serialService->getAllSerials();
+        $productSerials = array_filter($allSerials, fn($s) => ($s['productId'] ?? null) === ($item['productId'] ?? null));
+        if (!empty($productSerials)) {
+            // Lấy serial mới nhất
+            usort($productSerials, fn($a, $b) => strtotime($b['updatedAt']) <=> strtotime($a['updatedAt']));
+            return $productSerials[0]['serial'] ?? 'UNKNOWN';
+        }
+
+        // 4. Nếu không có serial thật → trả UNKNOWN
+        return 'UNKNOWN';
     }
 
     /* ======================================================
@@ -73,17 +82,17 @@ class WarrantyController extends Controller
 
         foreach ($orders as $order) {
             foreach ($order["items"] as $item) {
-                
+
                 // DÙNG HELPER ĐỂ LẤY SERIAL (THẬT HOẶC ẢO)
                 $serial = $this->getProductSerial($item, $order["id"]);
 
                 $purchased[] = [
-                    "orderId"     => $order["id"],
-                    "productId"   => $item["productId"],
+                    "orderId" => $order["id"],
+                    "productId" => $item["productId"],
                     "productName" => $item["productSnapshot"]["name"] ?? $item["name"],
-                    "quantity"    => $item["quantity"],
+                    "quantity" => $item["quantity"],
                     "purchasedAt" => date("d/m/Y", strtotime($order["createdAt"])),
-                    "serial"      => $serial,
+                    "serial" => $serial,
                     "latestClaim" => $latestClaimBySerial[$serial] ?? null
                 ];
             }
@@ -102,24 +111,24 @@ class WarrantyController extends Controller
 
         $orderRes = $this->apiGet("orders/me");
         $orders = $orderRes["data"] ?? [];
-        
+
         $foundProduct = null;
 
         // Tìm trong đơn hàng (dùng logic getProductSerial để so sánh)
         foreach ($orders as $order) {
             foreach ($order["items"] as $item) {
-                
+
                 // Tính toán serial của item này
                 $itemSerial = $this->getProductSerial($item, $order["id"]);
-                
+
                 if ($itemSerial === $serial) {
                     $foundProduct = [
-                        "name"        => $item["productSnapshot"]["name"] ?? $item["name"],
-                        "serial"      => $serial,
-                        "orderId"     => $order["id"],
+                        "name" => $item["productSnapshot"]["name"] ?? $item["name"],
+                        "serial" => $serial,
+                        "orderId" => $order["id"],
                         "purchasedAt" => date("d/m/Y", strtotime($order["createdAt"])),
                     ];
-                    break 2; 
+                    break 2;
                 }
             }
         }
@@ -150,7 +159,7 @@ class WarrantyController extends Controller
     {
         $request->validate([
             "serial_number" => "required",
-            "description"   => "required",
+            "description" => "required",
         ]);
 
         $serial = trim($request->serial_number);
@@ -158,19 +167,19 @@ class WarrantyController extends Controller
         // 1. Tìm sản phẩm gốc từ Orders
         $orderRes = $this->apiGet("orders/me");
         $orders = $orderRes["data"] ?? [];
-        
+
         $match = null;
 
         foreach ($orders as $order) {
             foreach ($order["items"] as $item) {
-                
+
                 // So sánh bằng Helper
                 $itemSerial = $this->getProductSerial($item, $order["id"]);
-                
+
                 if ($itemSerial === $serial) {
                     $match = [
-                        "orderId"     => $order["id"],
-                        "productId"   => $item["productId"],
+                        "orderId" => $order["id"],
+                        "productId" => $item["productId"],
                         "productName" => $item["productSnapshot"]["name"] ?? $item["name"],
                         "purchasedAt" => $order["createdAt"]
                     ];
@@ -186,13 +195,13 @@ class WarrantyController extends Controller
         // 2. Gửi yêu cầu lên Backend
         // Backend Node.js sẽ lưu serial này (dù là serial ảo "OLD-...") vào DB
         $payload = [
-            "orderId"       => $match["orderId"],
-            "productId"     => $match["productId"],
-            "productName"   => $match["productName"],
+            "orderId" => $match["orderId"],
+            "productId" => $match["productId"],
+            "productName" => $match["productName"],
             "productSerial" => $serial,
-            "purchasedAt"   => $match["purchasedAt"],
-            "issueDesc"     => $request->description,
-            "images"        => [],
+            "purchasedAt" => $match["purchasedAt"],
+            "issueDesc" => $request->description,
+            "images" => [],
         ];
 
         $token = session('user_token');

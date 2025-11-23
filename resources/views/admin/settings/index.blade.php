@@ -1,13 +1,13 @@
 @extends('layouts.admin')
 
-@section('title', 'Additional Management')
+@section('title', 'Quản Lý Bổ Sung')
 
 @section('content')
 <div class="space-y-6" x-data>
     <!-- Header -->
     <div>
-        <h1 class="text-2xl font-bold tracking-tight">Additional Management</h1>
-        <p class="text-muted-foreground">Manage categories, promotions, service centers, serials, and logs</p>
+        <h1 class="text-2xl font-bold tracking-tight">Quản Lý Bổ Sung</h1>
+        <p class="text-muted-foreground">Quản lý danh mục, khuyến mãi, trung tâm bảo hành, serial, và nhật ký</p>
     </div>
 
     <!-- Flash Messages -->
@@ -69,52 +69,52 @@
             <div class="grid grid-cols-5">
                 <button @click="$store.tab = 'categories'"
                         :class="{ 'border-b-2 border-cyan-500 text-foreground font-medium': $store.tab === 'categories' }"
-                        class="px-4 py-3 text-sm hover:text-foreground transition-colors text-center">Categories</button>
+                        class="px-4 py-3 text-sm hover:text-foreground transition-colors text-center">Danh mục</button>
                 <button @click="$store.tab = 'promotions'"
                         :class="{ 'border-b-2 border-purple-500 text-foreground font-medium': $store.tab === 'promotions' }"
-                        class="px-4 py-3 text-sm hover:text-foreground transition-colors text-center">Promotions</button>
+                        class="px-4 py-3 text-sm hover:text-foreground transition-colors text-center">Khuyến mãi</button>
                 <button @click="$store.tab = 'centers'"
                         :class="{ 'border-b-2 border-blue-500 text-foreground font-medium': $store.tab === 'centers' }"
-                        class="px-4 py-3 text-sm hover:text-foreground transition-colors text-center">Service Centers</button>
+                        class="px-4 py-3 text-sm hover:text-foreground transition-colors text-center">Trung tâm bảo hành</button>
                 <button @click="$store.tab = 'serials'"
                         :class="{ 'border-b-2 border-cyan-500 text-foreground font-medium': $store.tab === 'serials' }"
-                        class="px-4 py-3 text-sm hover:text-foreground transition-colors text-center">Serials</button>
+                        class="px-4 py-3 text-sm hover:text-foreground transition-colors text-center">Serial</button>
                 <button @click="$store.tab = 'logs'"
                         :class="{ 'border-b-2 border-indigo-500 text-foreground font-medium': $store.tab === 'logs' }"
-                        class="px-4 py-3 text-sm hover:text-foreground transition-colors text-center">Admin Logs</button>
+                        class="px-4 py-3 text-sm hover:text-foreground transition-colors text-center">Nhật ký quản trị</button>
             </div>
         </div>
 
         <div class="p-6">
-            {{-- ================= CATEGORIES ================= --}}
+            {{-- ================= DANH MỤC ================= --}}
             <template x-if="$store.tab === 'categories'">
                 <div x-transition>
                     @include('admin.settings.categories.index')
                 </div>
             </template>
 
-            {{-- ================= PROMOTIONS ================= --}}
+            {{-- ================= KHUYẾN MÃI ================= --}}
             <template x-if="$store.tab === 'promotions'">
                 <div x-transition>
                     @include('admin.settings.promotions.index')
                 </div>
             </template>
 
-            {{-- ================= SERVICE CENTERS ================= --}}
+            {{-- ================= TRUNG TÂM ================= --}}
             <template x-if="$store.tab === 'centers'">
                 <div x-transition>
                     @include('admin.settings.centers.index')
                 </div>
             </template>
 
-            {{-- ================= SERIALS ================= --}}
+            {{-- ================= SERIAL ================= --}}
             <template x-if="$store.tab === 'serials'">
                 <div x-transition>
                     @include('admin.settings.serials.index')
                 </div>
             </template>
 
-            {{-- ================= LOGS ================= --}}
+            {{-- ================= NHẬT KÝ ================= --}}
             <template x-if="$store.tab === 'logs'">
                 <div x-transition>
                     @include('admin.settings.logs.index')

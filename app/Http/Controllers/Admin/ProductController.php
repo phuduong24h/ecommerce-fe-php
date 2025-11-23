@@ -5,18 +5,25 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use App\Services\ProductService;
 use App\Services\CategoryService;
+use App\Services\WarrantyService;
+use App\Services\WarrantyPolicyService;
 use Illuminate\Http\Request;
+use App\Services\ProductSerialService;
 use Illuminate\Pagination\LengthAwarePaginator;
 
 class ProductController extends Controller
 {
     protected $productService;
     protected $categoryService;
+    protected $warrantyPolicyService;
+    protected $productSerialService;
 
-    public function __construct(ProductService $productService, CategoryService $categoryService)
+    public function __construct(ProductService $productService, CategoryService $categoryService, WarrantyPolicyService $warrantyPolicyService, ProductSerialService $productSerialService)
     {
         $this->productService = $productService;
         $this->categoryService = $categoryService;
+        $this->warrantyPolicyService = $warrantyPolicyService;
+        $this->productSerialService = $productSerialService;
     }
 
     /**
@@ -60,8 +67,9 @@ class ProductController extends Controller
     public function create()
     {
         $categories = $this->categoryService->getAllCategories();
+        $policies = $this->warrantyPolicyService->getAllPolicies();
         // dd($categories);// lấy từ service
-        return view('admin.products.create', compact('categories'));
+        return view('admin.products.create', compact('categories', 'policies'));
     }
 
     /**
@@ -78,6 +86,13 @@ class ProductController extends Controller
             'image_url' => 'nullable|url',
             'categoryId' => 'nullable|string',
             'description' => 'nullable|string',
+            'warrantyPolicyId' => 'nullable|string',
+            'isActive' => 'required|boolean',
+            'variants' => 'nullable|array',
+            'variants.*.name' => 'nullable|string|min:1',
+            'variants.*.value' => 'nullable|string|min:1',
+            'variants.*.price' => 'nullable|numeric|min:0',
+            'variants.*.stock' => 'nullable|integer|min:0',
         ]);
 
         // Map images
@@ -92,8 +107,6 @@ class ProductController extends Controller
 
         // Map categoryName từ CategoryService
         $categories = $this->categoryService->getAllCategories();
-
-        // Map categoryName nếu rỗng
         if (!empty($validated['categoryId'])) {
             $category = collect($categories)->firstWhere('id', $validated['categoryId']);
             if ($category) {
@@ -101,14 +114,37 @@ class ProductController extends Controller
             }
         }
 
+        // Tạo sản phẩm
         $result = $this->productService->createProduct($validated);
 
-        if ($result['success'] ?? false) {
-            return redirect()->route('admin.products.index')->with('success', 'Thêm sản phẩm thành công!');
+        if (!($result['success'] ?? false)) {
+            return back()->with('error', $result['message'] ?? 'Lỗi khi thêm sản phẩm');
         }
 
-        return back()->with('error', $result['message'] ?? 'Lỗi khi thêm sản phẩm');
+        $product = $result['data'] ?? null;
+
+        // Nếu policy yêu cầu serial thì tạo tự động
+        if ($product && !empty($validated['warrantyPolicyId'])) {
+            $policy = $this->warrantyPolicyService->getById($validated['warrantyPolicyId']);
+
+            if ($policy && ($policy['requiresSerial'] ?? false)) {
+                $serialService = new ProductSerialService();
+
+                $newSerial = $product['id']; // hoặc format khác bạn muốn
+
+
+                $serialService->createSerial([
+                    'productId' => $product['id'],
+                    'serial' => $newSerial,
+                    'status' => 'available',
+                ]);
+            }
+        }
+
+        return redirect()->route('admin.products.index')
+            ->with('success', 'Thêm sản phẩm thành công!');
     }
+
 
     /**
      * Trang chỉnh sửa sản phẩm
@@ -118,12 +154,13 @@ class ProductController extends Controller
         $products = $this->productService->getAllProducts();
         $product = collect($products)->firstWhere('id', $id);
         $categories = $this->categoryService->getAllCategories();
+        $policies = $this->warrantyPolicyService->getAllPolicies();
 
         if (!$product) {
             return redirect()->route('admin.products.index')->with('error', 'Sản phẩm không tồn tại');
         }
 
-        return view('admin.products.edit', compact('product', 'categories'));
+        return view('admin.products.edit', compact('product', 'categories', 'policies'));
     }
 
     /**
@@ -140,6 +177,11 @@ class ProductController extends Controller
             'image_url' => 'nullable|url',
             'categoryId' => 'nullable|string',
             'description' => 'nullable|string',
+            'variants' => 'nullable|array',
+            'variants.*.name' => 'nullable|string|min:1',
+            'variants.*.value' => 'nullable|string|min:1',
+            'variants.*.price' => 'nullable|numeric|min:0',
+            'variants.*.stock' => 'nullable|integer|min:0',
         ]);
 
         // Map images

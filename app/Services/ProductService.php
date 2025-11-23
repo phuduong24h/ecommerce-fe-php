@@ -40,7 +40,7 @@ class ProductService
             Log::error('API Error (getAllProducts): ' . $response->body());
             return [];
         }
-        
+
         $json = $response->json();
         return $json['success'] ?? false ? $json['data'] : [];
     }
@@ -85,7 +85,7 @@ class ProductService
     protected function mapPayload($data)
     {
         $payload = [
-            'name'  => $data['name'] ?? '',
+            'name' => $data['name'] ?? '',
             'price' => isset($data['price']) ? (float) $data['price'] : 0,
             'stock' => isset($data['stock']) ? (int) $data['stock'] : 0,
             'images' => !empty($data['images']) ? array_filter($data['images']) : [],
@@ -101,6 +101,32 @@ class ProductService
         if (!empty($data['description'])) {
             $payload['description'] = $data['description'];
         }
+        if (isset($data['warrantyPolicyId'])) {
+            $payload['warrantyPolicyId'] = $data['warrantyPolicyId'];
+        }
+
+        if (isset($data['isActive'])) {
+            $payload['isActive'] = (bool) $data['isActive'];
+        }
+
+        if (!empty($data['variants']) && is_array($data['variants'])) {
+            // Lọc bỏ các biến thể hoàn toàn trống
+            $filteredVariants = array_filter($data['variants'], function ($v) {
+                return !empty($v['name']) || !empty($v['value'])
+                    || (isset($v['price']) && $v['price'] > 0)
+                    || (isset($v['stock']) && $v['stock'] > 0);
+            });
+
+            $payload['variants'] = array_map(function ($v) {
+                return [
+                    'name' => $v['name'] ?? '',
+                    'value' => $v['value'] ?? '',
+                    'price' => isset($v['price']) ? max(0, (float) $v['price']) : 0,
+                    'stock' => isset($v['stock']) ? max(0, (int) $v['stock']) : 0,
+                ];
+            }, $filteredVariants);
+        }
+
 
         return $payload;
     }

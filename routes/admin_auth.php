@@ -44,11 +44,9 @@ Route::prefix('admin')->name('admin.')->group(function () {
     Route::get('/reset-password', [AuthController::class, 'showReset'])->name('reset');
     Route::post('/reset-password', [AuthController::class, 'submitReset'])->name('reset.submit');
 
-    // ========== LOGOUT ==========
-    Route::get('/logout', [AuthController::class, 'logout'])->name('logout');
-
-    // ========== DASHBOARD (CẦN LOGIN) ==========
-    Route::middleware('admin.auth')->group(function () {
-        Route::get('/dashboard', [AuthController::class, 'dashboard'])->name('dashboard');
-    });
+    // // ========== LOGOUT ==========
+    // Route::get('/logout', [AuthController::class, 'logout'])->name('logout');
+    //     Route::middleware('admin.auth')->group(function () {
+    //     Route::get('/dashboard', [AuthController::class, 'dashboard'])->name('dashboard');
+    // });
 });
