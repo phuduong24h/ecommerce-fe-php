@@ -18,11 +18,13 @@
 
     // 2. LOGIC XỬ LÝ BIẾN THỂ (VARIANTS)
     $variants = $product['variants'] ?? [];
+    $basePrice = $product['price'] ?? 0; // Giá gốc
     $hasVariants = count($variants) > 0;
 
-    // Giá và kho mặc định (Lấy của variant đầu tiên nếu có, ngược lại lấy của product)
-    $currentPrice = $hasVariants ? ($variants[0]['price'] ?? 0) : ($product['price'] ?? $product['GiaBan'] ?? 0);
-    $currentStock = $hasVariants ? ($variants[0]['stock'] ?? 0) : ($product['stock'] ?? $product['SoLuongTon'] ?? 0);
+    // Mặc định chọn variant đầu tiên
+    $defaultVariantPrice = $hasVariants ? ($variants[0]['price'] ?? 0) : 0;
+    $currentPrice = $basePrice + $defaultVariantPrice;
+    $currentStock = $hasVariants ? ($variants[0]['stock'] ?? 0) : ($product['stock'] ?? 0);
 
     $name = $product['name'] ?? $product['TenSP'] ?? 'Tên sản phẩm';
     $description = $product['description'] ?? $product['MoTa'] ?? 'Đang cập nhật mô tả...';
@@ -84,20 +86,23 @@
                 </div>
 
                 {{-- KHU VỰC CHỌN VARIANT (HIỂN THỊ NẾU CÓ) --}}
+                {{-- Chọn Variant --}}
                 @if($hasVariants)
-                <div class="mb-6 border-t border-b border-gray-100 py-4">
-                    <h3 class="text-sm font-bold text-gray-900 mb-3">
-                        {{ $variants[0]['name'] ?? 'Tùy chọn' }}:
-                    </h3>
+                <div class="mb-6">
+                    <h3 class="text-sm font-bold mb-2">Tùy chọn:</h3>
                     <div class="flex flex-wrap gap-2">
                         @foreach($variants as $index => $variant)
+                            @php
+                                // Hiển thị số tiền cộng thêm (VD: +$500)
+                                $vp = $variant['price'] ?? 0;
+                                $label = $vp > 0 ? " (+$" . number_format($vp) . ")" : "";
+                            @endphp
                             <button
-                                type="button"
-                                class="variant-btn px-4 py-2 border rounded-lg text-sm font-medium transition-all duration-200
-                                {{ $index === 0 ? 'border-cyan-500 bg-cyan-50 text-cyan-700 ring-1 ring-cyan-500' : 'border-gray-200 text-gray-600 hover:border-cyan-300 hover:text-cyan-600' }}"
+                                class="variant-btn px-4 py-2 border rounded-lg text-sm transition-all
+                                {{ $index === 0 ? 'border-cyan-500 bg-cyan-50 text-cyan-700' : 'border-gray-200 text-gray-600 hover:border-cyan-300' }}"
                                 onclick="selectVariant(this, {{ json_encode($variant) }})"
                             >
-                                {{ $variant['value'] }}
+                                {{ $variant['value'] }} <span class="text-xs opacity-70">{{ $label }}</span>
                             </button>
                         @endforeach
                     </div>
@@ -142,78 +147,61 @@
 
 {{-- SCRIPT XỬ LÝ CHỌN BIẾN THỂ --}}
 <script>
-    // 1. Khởi tạo biến thể mặc định (nếu có)
+    const basePrice = {{ $basePrice }};
     let selectedVariant = @json($hasVariants ? $variants[0] : null);
 
-    // 2. Hàm xử lý khi click chọn
     function selectVariant(btn, variantData) {
-        // Reset style tất cả nút
+        // 1. UI Button
         document.querySelectorAll('.variant-btn').forEach(b => {
-            b.className = 'variant-btn px-4 py-2 border border-gray-200 rounded-lg text-sm font-medium text-gray-600 hover:border-cyan-300 hover:text-cyan-600 transition-all duration-200';
+            b.className = 'variant-btn px-4 py-2 border border-gray-200 rounded-lg text-sm text-gray-600 hover:border-cyan-300 transition-all';
         });
-        // Active nút được bấm
-        btn.className = 'variant-btn px-4 py-2 border rounded-lg text-sm font-medium transition-all duration-200 border-cyan-500 bg-cyan-50 text-cyan-700 ring-1 ring-cyan-500';
+        btn.className = 'variant-btn px-4 py-2 border rounded-lg text-sm transition-all border-cyan-500 bg-cyan-50 text-cyan-700';
 
-        // Cập nhật biến toàn cục
+        // 2. Update Biến
         selectedVariant = variantData;
 
-        // Cập nhật UI (Giá, Kho)
-        updateUI(variantData);
+        // 3. Tính Giá (Base + Variant)
+        const finalPrice = basePrice + (variantData.price || 0);
 
-        // Cập nhật dữ liệu cho nút Thêm giỏ
-        updateAddToCartData();
-    }
+        // 4. Update Hiển thị
+        const formatter = new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' });
+        document.getElementById('display-price').innerText = formatter.format(finalPrice);
 
-    function updateUI(data) {
-        // Format tiền tệ
-        const formatter = new Intl.NumberFormat('en-US', {
-            style: 'currency',
-            currency: 'USD',
-            minimumFractionDigits: 2
-        });
+        const stockBadge = document.getElementById('stock-badge');
+        const cartBtn = document.getElementById('add-to-cart-btn');
 
-        document.getElementById('display-price').innerText = formatter.format(data.price);
-
-        const stockText = data.stock > 0 ? `Còn Hàng (${data.stock})` : 'Hết Hàng';
-        document.getElementById('display-stock-text').innerText = stockText;
-
-        // Update màu sắc badge kho
-        const badge = document.getElementById('stock-badge');
-        const btn = document.getElementById('add-to-cart-btn');
-
-        if (data.stock > 0) {
-            badge.className = "bg-green-100 text-green-700 px-3 py-1 rounded-full text-xs font-semibold flex items-center";
-            badge.innerHTML = `<i class="fas fa-check-circle mr-1"></i> <span id="display-stock-text">${stockText}</span>`;
-            btn.disabled = false;
-            btn.innerHTML = '<i class="fas fa-shopping-cart"></i> Thêm Vào Giỏ';
-            btn.classList.remove('bg-gray-400', 'cursor-not-allowed');
-            btn.classList.add('bg-blue-500', 'hover:bg-blue-600');
+        if(variantData.stock > 0) {
+            stockBadge.innerText = `Còn Hàng (${variantData.stock})`;
+            stockBadge.className = "px-3 py-1 rounded-full text-xs font-semibold bg-green-100 text-green-700";
+            cartBtn.disabled = false;
+            cartBtn.innerHTML = '<i class="fas fa-shopping-cart"></i> Thêm Vào Giỏ';
+            cartBtn.classList.remove('bg-gray-400');
+            cartBtn.classList.add('bg-blue-500', 'hover:bg-blue-600');
         } else {
-            badge.className = "bg-red-100 text-red-700 px-3 py-1 rounded-full text-xs font-semibold flex items-center";
-            badge.innerHTML = `<i class="fas fa-times-circle mr-1"></i> <span id="display-stock-text">${stockText}</span>`;
-            btn.disabled = true;
-            btn.innerHTML = 'Tạm Hết Hàng';
-            btn.classList.remove('bg-blue-500', 'hover:bg-blue-600');
-            btn.classList.add('bg-gray-400', 'cursor-not-allowed');
+            stockBadge.innerText = "Hết Hàng";
+            stockBadge.className = "px-3 py-1 rounded-full text-xs font-semibold bg-red-100 text-red-700";
+            cartBtn.disabled = true;
+            cartBtn.innerHTML = "Tạm Hết Hàng";
+            cartBtn.classList.remove('bg-blue-500', 'hover:bg-blue-600');
+            cartBtn.classList.add('bg-gray-400');
         }
+
+        // 5. Update Data cho nút Add Cart
+        updateAddToCartData();
     }
 
     function updateAddToCartData() {
         const btn = document.getElementById('add-to-cart-btn');
-        // Lấy JSON gốc ban đầu
         let productData = JSON.parse(btn.dataset.productJson);
 
-        // Gán thêm thông tin variant
         if (selectedVariant) {
             productData.selected_variant = selectedVariant;
-            productData.price = selectedVariant.price; // Cập nhật giá để AddCartController lưu đúng
+            // Không sửa productData.price gốc ở đây để tránh lỗi logic,
+            // controller sẽ tự tính base + variant.price
         }
-
-        // Gán ngược lại vào nút
         btn.dataset.productJson = JSON.stringify(productData);
     }
 
-    // Chạy lần đầu khi tải trang để gán variant mặc định
     document.addEventListener('DOMContentLoaded', () => {
         if(selectedVariant) updateAddToCartData();
     });

@@ -8,8 +8,6 @@ use App\Services\ApiClientService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
 
-
-// Thắng
 class AddCartController extends Controller
 {
     protected $addCartService;
@@ -45,20 +43,9 @@ class AddCartController extends Controller
         }
 
         try {
-
-            $cartResponse = $this->addCartService->getCart();
-            
-            // 2. Kiểm tra kỹ dữ liệu trả về. 
-            // Nếu API lỗi hoặc trả về rỗng, ta lấy từ SESSION làm chuẩn để không bị mất đơn cũ.
-            if (isset($cartResponse['success']) && $cartResponse['success']) {
-                $cart = $cartResponse['data'] ?? [];
-            } else {
-                // Fallback: Lấy từ session nếu API call thất bại
-                $cart = session('user.cart', []);
-            }
-            
-            // Nếu cart lấy về không phải mảng (null), ép về mảng rỗng
-            if (!is_array($cart)) $cart = [];
+            // 3. LẤY GIỎ HÀNG TỪ API (THAY VÌ SESSION)
+            $cartResponse = $this->api->get("cart");
+            $cart = $cartResponse['data'] ?? [];
 
             // 🟢 TẠO ID DUY NHẤT CHO CART ITEM
             // Nếu sản phẩm có variant, ID trong giỏ sẽ là "ID_Sản_Phẩm" + "Variant_Value"
@@ -92,17 +79,19 @@ class AddCartController extends Controller
                 } elseif (!empty($product['image'])) {
                     $img = $product['image'];
                 }
-                // 🟢 QUYẾT ĐỊNH GIÁ
-                // Nếu có variant thì dùng giá variant, không thì dùng giá gốc
-                $finalPrice = $selectedVariant ? ($selectedVariant['price'] ?? 0) : ($product['price'] ?? 0);
+                // 🟢 LOGIC TÍNH GIÁ MỚI (CỘNG DỒN)
+                $basePrice = $product['price'] ?? $product['GiaBan'] ?? 0;
+                $variantPrice = $selectedVariant ? ($selectedVariant['price'] ?? 0) : 0;
+
+                $finalPrice = $basePrice + $variantPrice;
 
                 $cart[] = [
                     'productId' => $productId,
                     'name' => $product['name'] ?? 'Sản phẩm',
-                    'price' => $finalPrice, // Lưu giá chuẩn theo variant
+                    'price' => $finalPrice, // Lưu tổng tiền
                     'quantity' => 1,
                     'image' => $img,
-                    'variant' => $selectedVariant ? $selectedVariant['value'] : null // Lưu tên variant
+                    'variant' => $selectedVariant ? $selectedVariant['value'] : null
                 ];
             }
 

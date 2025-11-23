@@ -45,7 +45,7 @@
                     @else
                         @foreach ($products as $product)
                             @php
-                                // 1. Xử lý ảnh
+                                // 1. Xử lý ảnh (Logic cũ của bạn - Giữ nguyên)
                                 $imageUrl = 'https://via.placeholder.com/300?text=No+Image';
                                 if (!empty($product['HinhAnh'])) {
                                     $imageUrl = $product['HinhAnh'];
@@ -58,20 +58,27 @@
 
                                 $prodId = $product['id'] ?? $product['_id'] ?? 0;
 
-                                // 2. Xử lý Variant cho nút Thêm Nhanh
-                                $productForCart = $product;
-                                $displayPrice = $product['price'] ?? 0;
+                                // 2. LOGIC GIÁ CỘNG DỒN (Sửa lại cho đúng)
+                                $basePrice = $product['price'] ?? 0; // Giá gốc sản phẩm
+                                $displayPrice = $basePrice;          // Mặc định hiển thị giá gốc
+                                $productForCart = $product;          // Dữ liệu để gửi vào giỏ hàng
                                 $hasVariant = false;
 
+                                // Kiểm tra nếu có biến thể
                                 if (!empty($product['variants']) && count($product['variants']) > 0) {
                                     $hasVariant = true;
-                                    // Mặc định lấy biến thể đầu tiên để thêm vào giỏ
+                                    // Lấy biến thể đầu tiên làm mặc định cho trang chủ
                                     $firstVariant = $product['variants'][0];
+
+                                    // Gán biến thể đã chọn vào dữ liệu giỏ hàng
                                     $productForCart['selected_variant'] = $firstVariant;
 
-                                    // Hiển thị giá của biến thể thấp nhất
-                                    $displayPrice = $firstVariant['price'];
-                                    $productForCart['price'] = $firstVariant['price'];
+                                    // TÍNH TOÁN GIÁ HIỂN THỊ: Giá Gốc + Giá Biến Thể
+                                    $displayPrice = $basePrice + ($firstVariant['price'] ?? 0);
+
+                                    // Cập nhật giá vào object giỏ hàng để AddCartController xử lý đúng nếu cần
+                                    // (Lưu ý: Controller nên tính toán lại để bảo mật, nhưng gửi lên để UI JS xử lý nhanh)
+                                    $productForCart['price'] = $displayPrice;
                                 }
                             @endphp
 
@@ -107,9 +114,11 @@
                                         </p>
 
                                         <div class="home-product-item__footer">
+                                            {{-- Hiển thị giá đã tính toán (Cộng dồn) --}}
                                             <span class="home-product-item__price text-cyan-600 font-bold">
                                                 ${{ number_format($displayPrice, 2) }}
                                             </span>
+
                                             <span class="home-product-item__stock text-xs">
                                                 {{ ($product['stock'] ?? 0) > 0 ? 'Còn Hàng' : 'Hết' }}
                                             </span>
@@ -129,7 +138,7 @@
                 </div>
             </div>
 
-            {{-- PHÂN TRANG --}}
+            {{-- PHÂN TRANG (PAGINATION) --}}
             @if(isset($totalPages) && $totalPages > 1)
             <div class="pagination">
                 <ul class="pagination-list">
