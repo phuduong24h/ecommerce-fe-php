@@ -70,7 +70,7 @@ class CheckoutController extends Controller
             "name" => $i["name"], // Backend cần field này nếu snapshot
             "price" => $i["price"],
             "quantity" => $i["quantity"],
-            // "variant" => $i["variant"] ?? null, // Bỏ comment nếu backend cần
+             "variant" => $i["variant"] ?? null, // Bỏ comment nếu backend cần (sửa cái này)
         ])->toArray();
 
         $payload = [

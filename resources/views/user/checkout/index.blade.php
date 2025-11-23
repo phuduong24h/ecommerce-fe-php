@@ -35,15 +35,32 @@
          2. DANH SÁCH SẢN PHẨM
        ====================== --}}
     <h4 class="font-semibold mb-3">Sản Phẩm Trong Giỏ</h4>
-
+    {{-- sửa ở đây --}}
     <div class="border rounded-lg p-4 mb-6">
-        @foreach($cart as $item)
-            <div class="flex justify-between py-2 border-b last:border-0">
-                <span>{{ $item['name'] }} (x{{ $item['quantity'] }})</span>
-                <span>${{ number_format($item['price'] * $item['quantity'], 2) }}</span>
+    @foreach($cart as $item)
+        <div class="flex justify-between py-2 border-b last:border-0">
+            {{-- CỘT TÊN SẢN PHẨM --}}
+            <div class="flex flex-col">
+                <span class="font-medium">
+                    {{ $item['name'] }} 
+                    <span class="text-gray-500 text-sm">(x{{ $item['quantity'] }})</span>
+                </span>
+                
+                {{-- 🟢 THÊM ĐOẠN NÀY ĐỂ HIỆN VARIANT --}}
+                @if(!empty($item['variant']))
+                    <span class="text-xs text-gray-500 mt-1">
+                        Phân loại: <span class="font-semibold text-cyan-600">{{ $item['variant'] }}</span>
+                    </span>
+                @endif
             </div>
-        @endforeach
-    </div>
+
+            {{-- CỘT GIÁ --}}
+            <span class="font-semibold text-gray-700">
+                ${{ number_format($item['price'] * $item['quantity'], 2) }}
+            </span>
+        </div>
+    @endforeach
+</div>
 
     {{-- Subtotal --}}
     <div class="flex justify-between mb-2">
