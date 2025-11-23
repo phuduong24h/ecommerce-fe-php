@@ -14,13 +14,14 @@ use App\Http\Controllers\User\CartController;
 use App\Http\Controllers\User\AccountController;
 use App\Http\Controllers\User\CheckoutController;
 
-
+use App\Http\Middleware\AdminAuth;
 
 use App\Http\Controllers\User\LoginController;
 use App\Http\Controllers\User\InterfaceController;
 use App\Http\Controllers\User\AddCartController; // <-- THÊM DÒNG NÀY
 
 use App\Http\Controllers\User\ProductDetailController;
+use App\Http\Controllers\User\AuthController; //hải thêm
 
 use App\Http\Controllers\User\WarrantyController; //bao hanh cua hải
 
@@ -33,8 +34,8 @@ Route::get('/', [InterfaceController::class, 'index'])->name('home');
 // ========================================
 // 1. ADMIN ROUTES (GIAO DIỆN)
 // ========================================
-Route::prefix('admin')->name('admin.')->group(function () {
-
+Route::prefix('admin')->name('admin.')->middleware([AdminAuth::class])->group(function () {
+    Route::get('/admin/logout', [AuthController::class, 'logout'])->name('admin.logout');
     //Dashboard
     Route::get('/', [DashboardController::class, 'index'])->name('dashboard');
     Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');

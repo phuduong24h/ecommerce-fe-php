@@ -13,6 +13,12 @@
         <img src="{{ $item['image'] ?? '' }}" class="rounded-3" width="80" height="80" style="object-fit: cover;" alt="{{ $item['name'] ?? '' }}">
         <div>
             <h6 class="mb-1">{{ $item['name'] ?? 'Tên sản phẩm' }}</h6>
+                {{-- Kiểm tra nếu có variant thì hiển thị (sửa ở đây)--}}
+                        @if(!empty($item['variant']))
+                <span class="badge bg-light text-dark border ms-2" style="font-weight: normal;">
+                    {{ $item['variant'] }}
+                </span>
+            @endif
 
             {{-- GIÁ THEO USD --}}
             <p class="text-primary mb-0">
