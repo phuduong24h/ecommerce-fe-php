@@ -14,6 +14,7 @@
     <!-- HEADER -->
     <header class="bg-white border-b shadow-sm sticky top-0 z-50">
         <div class="px-6 py-4 flex justify-between items-center">
+
             <!-- Logo + Tên -->
             <div class="flex items-center space-x-3 cursor-pointer">
                 <div
@@ -31,28 +32,49 @@
 
             <!-- Ngôn ngữ + Chế độ -->
             <div class="flex items-center space-x-3">
+
+                <!-- Language -->
                 <select class="text-sm border rounded px-2 py-1 focus:ring-2 focus:ring-cyan-500">
                     <option>VN</option>
                     <option>EN</option>
                 </select>
-                <a href="#" class="{{ ($viewMode ?? '') === 'admin'
-    ? 'bg-gradient-to-r from-cyan-500 to-blue-500 hover:from-cyan-600 hover:to-blue-600 text-white shadow-lg shadow-cyan-500/30'
-    : 'border border-gray-300 hover:bg-gray-100 text-gray-700'
-                   }} px-4 py-2 rounded text-sm font-medium transition-all duration-300">
-                    Quản Trị
-                </a>
-                <a href="#" class="{{ ($viewMode ?? '') === 'customer'
-    ? 'bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white shadow-lg shadow-pink-500/30'
-    : 'border border-gray-300 hover:bg-gray-100 text-gray-700'
-                   }} px-4 py-2 rounded text-sm font-medium transition-all duration-300">
-                    Khách Hàng
-                </a>
+
+                <!-- LOGIN STATE LOGIC -->
+                @if(session('admin_token'))
+
+                    <!-- Tên admin -->
+                    <span class="px-4 py-2 rounded text-sm font-medium text-gray-700">
+                        {{ session('admin_name') ?? 'Admin' }}
+                    </span>
+
+                    <!-- Logout -->
+                    <a href="{{ route('admin.logout') }}"
+                       class="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded text-sm font-medium transition-all">
+                        Đăng Xuất
+                    </a>
+
+                @else
+
+                    <!-- Chưa login: hiển thị nút -->
+                    <a href="/admin/login"
+                       class="border border-gray-300 hover:bg-gray-100 text-gray-700 px-4 py-2 rounded text-sm font-medium">
+                        Quản Trị
+                    </a>
+
+                    <a href="/"
+                       class="border border-gray-300 hover:bg-gray-100 text-gray-700 px-4 py-2 rounded text-sm font-medium">
+                        Khách Hàng
+                    </a>
+
+                @endif
             </div>
+
         </div>
     </header>
 
     <!-- BODY -->
     <div class="flex flex-1">
+
         <!-- SIDEBAR -->
         <aside class="w-64 bg-white border-r shadow-sm min-h-screen p-4">
             <nav class="flex flex-col gap-1">
@@ -70,24 +92,24 @@
                 @endphp
 
                 @foreach ($menuItems as $item)
-                            @php
-                                $isActive = $currentRoute === $item['route'];
-                            @endphp
-                            <a href="{{ route($item['route']) }}" class="flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all duration-300
-                                                           {{ $isActive
-                    ? 'bg-gradient-to-r from-cyan-500 to-blue-500 text-white shadow-lg shadow-cyan-500/30'
-                    : 'text-gray-700 hover:bg-gray-100 hover:text-gray-900'
-                                                           }}">
-                                <!-- Sử dụng component SVG icon -->
-                                <x-icon-admin name="{{ $item['icon'] }}"
-                                    class="h-5 w-5 {{ $isActive ? 'text-white' : 'text-gray-700' }}" />
-                                <span>{{ $item['label'] }}</span>
+                    @php $isActive = $currentRoute === $item['route']; @endphp
 
-                                @if($isActive)
-                                    <x-icon-admin name="chevron-right" class="h-4 w-4 text-white ml-auto" />
-                                @endif
-                            </a>
+                    <a href="{{ route($item['route']) }}"
+                       class="flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all duration-300
+                        {{ $isActive
+                            ? 'bg-gradient-to-r from-cyan-500 to-blue-500 text-white shadow-lg shadow-cyan-500/30'
+                            : 'text-gray-700 hover:bg-gray-100 hover:text-gray-900'
+                        }}">
+                        <x-icon-admin name="{{ $item['icon'] }}"
+                                      class="h-5 w-5 {{ $isActive ? 'text-white' : 'text-gray-700' }}" />
+                        <span>{{ $item['label'] }}</span>
+
+                        @if($isActive)
+                            <x-icon-admin name="chevron-right" class="h-4 w-4 text-white ml-auto" />
+                        @endif
+                    </a>
                 @endforeach
+
             </nav>
         </aside>
 

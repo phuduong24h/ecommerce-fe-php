@@ -14,7 +14,8 @@ class OrderService
     {
         // Dùng cùng token và baseUrl như ProductService
         $this->baseUrl = config('services.api.url') . '/api/v1/admin';
-        $this->token = config('services.api.token');
+        // $this->token = config('services.api.token');
+        $this->token = session('admin_token');
     }
 
     /**

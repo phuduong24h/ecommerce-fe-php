@@ -26,23 +26,35 @@
         </div>
     </div>
 
-    <!-- Order Items -->
+    <!-- Order Items (chỉnh) -->
     <div class="border-t pt-4">
-        @foreach($order['items'] as $item)
-        <div class="flex justify-between py-2">
+    @foreach($order['items'] as $item)
+    <div class="flex justify-between py-2">
 
-            <span class="text-gray-700">
-                {{ $item['name'] ?? 'Tên SP lỗi' }}
-                x{{ $item['quantity'] ?? 1 }}
+        <div class="flex flex-col">
+            <span class="text-gray-700 font-medium">
+                {{ $item['name'] ?? 'Sản phẩm' }}
             </span>
+            
+            {{-- 🟢 HIỂN THỊ VARIANT Ở LỊCH SỬ ĐƠN HÀNG --}}
+            @if(!empty($item['variant']))
+                <span class="text-xs text-gray-500">
+                    Phân loại: {{ $item['variant'] }}
+                </span>
+            @endif
 
-            <span class="text-gray-900 font-medium">
-                ${{ number_format($item['price'] ?? 0, 2) }}
+            <span class="text-xs text-gray-400 mt-0.5">
+                Số lượng đã mua: {{ $item['quantity'] ?? 1 }}
             </span>
-
         </div>
-        @endforeach
+
+        <span class="text-gray-900 font-medium">
+            ${{ number_format($item['price'] ?? 0, 2) }}
+        </span>
+
     </div>
+    @endforeach
+</div>
 
 </div>
 

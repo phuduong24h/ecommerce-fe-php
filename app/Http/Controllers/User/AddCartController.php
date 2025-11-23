@@ -4,108 +4,122 @@ namespace App\Http\Controllers\User;
 
 use App\Http\Controllers\Controller;
 use App\Services\AddCartService;
+use App\Services\ApiClientService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
 
 class AddCartController extends Controller
 {
     protected $addCartService;
+    //protected $api;
 
-    public function __construct(AddCartService $addCartService)
+    public function __construct(AddCartService $addCartService, ApiClientService $api)
     {
         $this->addCartService = $addCartService;
+        //$this->api = $api;
     }
 
-    /**
-     * API Endpoint cho AJAX để thêm sản phẩm vào giỏ
-     * Route: POST /cart/add
-     */
     public function add(Request $request)
     {
-        // 1. Kiểm tra xem user đã đăng nhập chưa
-        if (!session('user_token')) {
+        // 1. Kiểm tra đăng nhập
+        if (!session('user')) {
             return response()->json([
                 'success' => false,
-                'message' => 'Bạn cần đăng nhập để thêm vào giỏ hàng.',
-                'redirect' => route('login') // Báo cho JS chuyển hướng
+                'message' => 'Bạn cần đăng nhập để mua hàng',
+                'redirect' => route('login')
             ], 401);
         }
 
-        // 2. Lấy thông tin sản phẩm từ request
+        // 2. Lấy dữ liệu sản phẩm
         $product = $request->input('product_json');
+        Log::info('AddCart Request:', ['product' => $product]);
+
+        // 🟢 NHẬN THÔNG TIN VARIANT ĐƯỢC CHỌN
+        // Nếu client gửi lên variant đã chọn thì lấy, không thì null
+        $selectedVariant = $product['selected_variant'] ?? null;
+
         if (!$product) {
-            return response()->json(['success' => false, 'message' => 'Thiếu thông tin sản phẩm.'], 400);
+            return response()->json(['success' => false, 'message' => 'Dữ liệu sản phẩm lỗi'], 400);
         }
 
         try {
-            // 3. Lấy giỏ hàng hiện tại từ session (cho nhanh) hoặc từ API
-            // Lấy từ session mà ta đã lưu khi đăng nhập
-            $cartArray = session('user.cart', []);
+            // 3. LẤY GIỎ HÀNG TỪ API (THAY VÌ SESSION)
+            $cartResponse = $this->addCartService->getCart();
+            $cart = $cartResponse['data'] ?? [];
 
+            // 🟢 TẠO ID DUY NHẤT CHO CART ITEM
+            // Nếu sản phẩm có variant, ID trong giỏ sẽ là "ID_Sản_Phẩm" + "Variant_Value"
+            // Để phân biệt iPhone Đen và iPhone Trắng là 2 dòng khác nhau
             $productId = $product['id'] ?? $product['_id'];
-            $existingItemIndex = -1;
-            foreach ($cartArray as $index => $item) {
-                if ($item['productId'] == $productId) {
-                    $existingItemIndex = $index;
+            $cartItemId = $selectedVariant
+                ? $productId . '_' . $selectedVariant['value']
+                : $productId;
+
+            $found = false;
+
+            // Tìm xem có trong giỏ chưa
+            foreach ($cart as &$item) {
+                // So sánh theo CartItemId tự tạo (hoặc so sánh cả id và variant value)
+                $itemVariant = $item['variant'] ?? null;
+                $reqVariant = $selectedVariant ? $selectedVariant['value'] : null;
+
+                if ($item['productId'] == $productId && $itemVariant == $reqVariant) {
+                    $item['quantity'] += 1;
+                    $found = true;
                     break;
                 }
             }
 
-            // 4. Logic thêm/cập nhật giỏ hàng
-            if ($existingItemIndex > -1) {
-                // Sản phẩm đã có, tăng số lượng
-                $cartArray[$existingItemIndex]['quantity'] += 1;
-            } else {
-                $imageUrl = 'default.jpg'; // Ảnh mặc định
+            // Nếu chưa có, thêm mới
+            if (!$found) {
+                // Xử lý ảnh
+                $img = 'https://via.placeholder.com/150';
+                if (!empty($product['images'][0])) {
+                    $img = is_array($product['images'][0]) ? $product['images'][0]['url'] : $product['images'][0];
+                } elseif (!empty($product['image'])) {
+                    $img = $product['image'];
+                }
+                // 🟢 LOGIC TÍNH GIÁ MỚI (CỘNG DỒN)
+                $basePrice = $product['price'] ?? $product['GiaBan'] ?? 0;
+                $variantPrice = $selectedVariant ? ($selectedVariant['price'] ?? 0) : 0;
 
-                // 1. Thử lấy 'HinhAnh' (key cũ)
-                if (!empty($product['HinhAnh'])) {
-                    $imageUrl = $product['HinhAnh'];
-                }
-                // 2. Thử lấy 'image' (key trong app.js)
-                elseif (!empty($product['image'])) {
-                    $imageUrl = $product['image'];
-                }
-                // 3. Thử lấy mảng 'images' (key trong app.js)
-                elseif (!empty($product['images']) && is_array($product['images']) && count($product['images']) > 0) {
-                    $firstImage = $product['images'][0];
-                    if (is_array($firstImage) && !empty($firstImage['url'])) {
-                        $imageUrl = $firstImage['url']; // Dạng [{ "url": "..." }]
-                    } elseif (is_string($firstImage)) {
-                        $imageUrl = $firstImage; // Dạng ["...", "..."]
-                    }
-                }
-                // === KẾT THÚC SỬA LỖI ===
+                $finalPrice = $basePrice + $variantPrice;
 
-                $cartArray[] = [
+                $cart[] = [
                     'productId' => $productId,
+                    'name' => $product['name'] ?? 'Sản phẩm',
+                    'price' => $finalPrice, // Lưu tổng tiền
                     'quantity' => 1,
-                    'name' => $product['TenSP'] ?? $product['name'] ?? 'Sản phẩm',
-                    'price' => $product['GiaBan'] ?? $product['price'] ?? 0,
-                    'image' => $imageUrl // <-- ĐÃ SỬA LẠI ĐÚNG
+                    'image' => $img,
+                    'variant' => $selectedVariant ? $selectedVariant['value'] : null
                 ];
             }
 
-            // 5. Đồng bộ giỏ hàng mới lên backend
-            $result = $this->addCartService->updateCart($cartArray);
+            // 4. ĐẨY GIỎ HÀNG LÊN API (QUAN TRỌNG NHẤT)
+            $updateResponse = $this->addCartService->updateCart($cart);
 
-            if (!$result['success']) {
-                return response()->json($result, 500);
+            if (!($updateResponse['success'] ?? false)) {
+                throw new \Exception($updateResponse['message'] ?? 'Không thể cập nhật giỏ hàng');
             }
 
-            // 6. Lưu giỏ hàng mới vào session
-            $updatedCart = $result['data'];
-            session(['user.cart' => $updatedCart]);
+            // 5. ĐỒNG BỘ LẠI SESSION TỪ API (để header cập nhật)
+            session(['user.cart' => $cart]);
+            session()->save();
 
-            // 7. Trả về số lượng mới cho JS
+            Log::info('Cart Updated via API:', ['count' => count($cart)]);
+
             return response()->json([
                 'success' => true,
-                'newCartCount' => count($updatedCart)
+                'newCartCount' => count($cart),
+                'message' => 'Đã thêm vào giỏ hàng'
             ]);
 
         } catch (\Exception $e) {
-            Log::error('Cart Add Error: ' . $e->getMessage());
-            return response()->json(['success' => false, 'message' => 'Lỗi hệ thống khi thêm giỏ hàng.'], 500);
+            Log::error('Cart Error: ' . $e->getMessage());
+            return response()->json([
+                'success' => false,
+                'message' => 'Lỗi: ' . $e->getMessage()
+            ], 500);
         }
     }
 }

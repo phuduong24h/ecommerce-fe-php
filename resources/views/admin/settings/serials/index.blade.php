@@ -1,26 +1,14 @@
 <template x-if="$store.tab === 'serials'">
     <div x-transition class="space-y-4">
-
-        <!-- Header: Add Serial button -->
-        <div class="flex justify-end">
-            <a href="{{ route('admin.settings.serials.create') }}"
-               class="inline-flex items-center justify-center rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 h-10 px-4 py-2 bg-gradient-to-r from-cyan-500 to-blue-500 hover:from-cyan-600 hover:to-blue-600 text-white">
-                <svg class="mr-2 h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
-                </svg>
-                Add Serial
-            </a>
-        </div>
-
         <!-- Table -->
         <div class="rounded-lg border bg-card text-card-foreground shadow-sm overflow-hidden">
             <table class="w-full">
                 <thead class="border-b bg-muted/50">
                     <tr>
-                        <th class="h-12 px-4 text-left align-middle font-medium text-muted-foreground text-xs uppercase tracking-wider">Serial Number</th>
-                        <th class="h-12 px-4 text-left align-middle font-medium text-muted-foreground text-xs uppercase tracking-wider">Product</th>
-                        <th class="h-12 px-4 text-left align-middle font-medium text-muted-foreground text-xs uppercase tracking-wider">Status</th>
-                        <th class="h-12 px-4 text-left align-middle font-medium text-muted-foreground text-xs uppercase tracking-wider">Actions</th>
+                        <th class="h-12 px-4 text-left align-middle font-medium text-muted-foreground text-xs uppercase tracking-wider">Số serial</th>
+                        <th class="h-12 px-4 text-left align-middle font-medium text-muted-foreground text-xs uppercase tracking-wider">Sản phẩm</th>
+                        <th class="h-12 px-4 text-left align-middle font-medium text-muted-foreground text-xs uppercase tracking-wider">Trạng thái</th>
+                        <th class="h-12 px-4 text-left align-middle font-medium text-muted-foreground text-xs uppercase tracking-wider">Hành động</th>
                     </tr>
                 </thead>
                 <tbody class="divide-y">

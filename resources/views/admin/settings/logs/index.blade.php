@@ -1,6 +1,6 @@
 <div x-transition class="space-y-4">
     <div class="rounded-lg border bg-card text-card-foreground shadow-sm p-6">
-        <h3 class="text-lg font-semibold mb-4">Activity Log</h3>
+        <h3 class="text-lg font-semibold mb-4">Danh sách log</h3>
         <div class="space-y-4">
             @forelse($logs as $log)
             <div class="flex items-start gap-4 p-4 border rounded-lg hover:bg-muted/50 transition-colors">

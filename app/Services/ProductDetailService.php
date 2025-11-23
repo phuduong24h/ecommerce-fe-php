@@ -14,7 +14,6 @@ class ProductDetailService
     {
        // SỬA: Nối thêm '/api/v1' vì config mặc định chỉ là localhost:3000
         $this->baseUrl = config('services.api.url') . '/api/v1';
-
         $this->timeout = config('services.api.timeout', 30);
     }
 

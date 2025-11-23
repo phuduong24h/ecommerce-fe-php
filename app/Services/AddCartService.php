@@ -7,13 +7,27 @@ use Illuminate\Support\Facades\Log;
 
 class AddCartService
 {
-    protected $baseUrl;
     protected $cartBaseUrl;
+    protected $timeout;
+    protected $verify;
 
     public function __construct()
     {
-        $this->baseUrl = config('services.api.url', 'http://localhost:3000') . '/api/v1';
-        $this->cartBaseUrl = $this->baseUrl . '/cart'; // <-- THÊM DÒNG NÀY
+        // Lấy URL gốc: http://localhost:3000
+        $baseUrl = config('services.api.url');
+        
+        // --- SỬA DÒNG NÀY ---
+        // Phải nối thêm /api/v1/cart để đúng đường dẫn backend
+        $this->cartBaseUrl = $baseUrl . '/api/v1/cart';
+
+        $this->timeout = config('services.api.timeout', 30);
+        $this->verify = config('services.api.verify', false);
+    }
+
+    // ... Giữ nguyên các hàm getHttp, getCart, updateCart bên dưới ...
+    protected function getHttp()
+    {
+        return Http::timeout($this->timeout)->withOptions(['verify' => $this->verify]);
     }
 
     public function getCart()
@@ -23,16 +37,22 @@ class AddCartService
                 return ['success' => false, 'message' => 'Chưa đăng nhập'];
             }
 
-            $response = Http::withToken(session('user_token'))
-                            ->timeout(10)
+            // Gọi GET tới http://localhost:3000/api/v1/cart
+            $response = $this->getHttp()
+                            ->withToken(session('user_token'))
                             ->get($this->cartBaseUrl);
 
             $json = $response->json();
-            if ($response->failed() || !$json['success']) {
+            
+            // Log để debug nếu vẫn lỗi
+            if ($response->failed()) {
+                Log::error('API Get Cart Failed:', ['status' => $response->status(), 'body' => $response->body()]);
+            }
+
+            if ($response->failed() || !($json['success'] ?? false)) {
                 return ['success' => false, 'message' => 'Không thể lấy giỏ hàng'];
             }
 
-            // Trả về mảng data (là mảng giỏ hàng)
             return ['success' => true, 'data' => $json['data'] ?? []];
 
         } catch (\Exception $e) {
@@ -41,12 +61,6 @@ class AddCartService
         }
     }
 
-    /**
-     * Cập nhật toàn bộ giỏ hàng lên backend
-     * Yêu cầu đã đăng nhập (gửi token)
-     *
-     * @param array $cartArray Mảng giỏ hàng mới
-     */
     public function updateCart(array $cartArray)
     {
         try {
@@ -54,19 +68,23 @@ class AddCartService
                 return ['success' => false, 'message' => 'Chưa đăng nhập'];
             }
 
-            // API backend yêu cầu body là { cart: [...] }
             $body = ['cart' => $cartArray];
 
-            $response = Http::withToken(session('user_token'))
-                            ->timeout(10)
+            // Gọi PUT tới http://localhost:3000/api/v1/cart
+            $response = $this->getHttp()
+                            ->withToken(session('user_token'))
                             ->put($this->cartBaseUrl, $body);
 
             $json = $response->json();
-            if ($response->failed() || !$json['success']) {
+            
+            if ($response->failed()) {
+                Log::error('API Update Cart Failed:', ['status' => $response->status(), 'body' => $response->body()]);
+            }
+
+            if ($response->failed() || !($json['success'] ?? false)) {
                 return ['success' => false, 'message' => 'Không thể cập nhật giỏ hàng'];
             }
 
-            // Trả về mảng data (là mảng giỏ hàng đã cập nhật)
             return ['success' => true, 'data' => $json['data'] ?? []];
 
         } catch (\Exception $e) {

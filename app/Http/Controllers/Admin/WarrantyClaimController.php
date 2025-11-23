@@ -26,29 +26,44 @@ class WarrantyClaimController extends Controller
     //     // Trả về view Blade
     //     return view('admin.warranty.index', compact('claims'));
     // }
-
     public function index(Request $request)
     {
         $status = $request->query('status');
 
-        // Lấy tất cả claims từ service và convert sang Collection
+        // Lấy claims và convert sang collection
         $allClaims = collect($this->warrantyService->getClaims($status) ?? []);
 
-        // --- Phân trang thủ công ---
-        $perPage = 5; // số claims / trang
-        $page = $request->get('page', 1); // trang hiện tại
+        // Đếm trạng thái
+        $statusCounts = [
+            'PENDING' => $allClaims->where('status', 'PENDING')->count(),
+            'APPROVED' => $allClaims->where('status', 'APPROVED')->count(),
+            'REJECTED' => $allClaims->where('status', 'REJECTED')->count(),
+            'SCHEDULED' => $allClaims->where('status', 'SCHEDULED')->count(),
+            'IN_REPAIR' => $allClaims->where('status', 'IN_REPAIR')->count(),
+            'REPAIRED' => $allClaims->where('status', 'REPAIRED')->count(),
+            'COMPLETED' => $allClaims->where('status', 'COMPLETED')->count(),
+            'CANCELLED' => $allClaims->where('status', 'CANCELLED')->count(),
+        ];
+
+        // Phân trang
+        $perPage = 5;
+        $page = $request->get('page', 1);
 
         $claims = new LengthAwarePaginator(
-            $allClaims->forPage($page, $perPage), // slice dữ liệu
-            $allClaims->count(),                  // tổng số claims
+            $allClaims->forPage($page, $perPage),
+            $allClaims->count(),
             $perPage,
             $page,
-            ['path' => $request->url(), 'query' => $request->query()] // giữ query string
+            ['path' => $request->url(), 'query' => $request->query()]
         );
 
-        // Trả về view Blade
-        return view('admin.warranty.index', compact('claims'));
+        // Truyền thêm statusCounts xuống view
+        return view('admin.warranty.index', [
+            'claims' => $claims,
+            'statusCounts' => $statusCounts
+        ]);
     }
+
 
     /**
      * Hiển thị chi tiết claim
