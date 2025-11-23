@@ -35,7 +35,7 @@ Route::get('/', [InterfaceController::class, 'index'])->name('home');
 // 1. ADMIN ROUTES (GIAO DIỆN)
 // ========================================
 Route::prefix('admin')->name('admin.')->middleware([AdminAuth::class])->group(function () {
-    Route::get('/admin/logout', [AuthController::class, 'logout'])->name('admin.logout');
+    Route::get('/logout', [AuthController::class, 'logout'])->name('logout');
     //Dashboard
     //Route::get('/', [DashboardController::class, 'index'])->name('dashboard');
     Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
