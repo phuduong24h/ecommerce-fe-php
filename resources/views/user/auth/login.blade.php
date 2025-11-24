@@ -76,6 +76,7 @@
                 </div>
             @endif
 
+            {{-- FORM ĐĂNG NHẬP --}}
             <div id="login" class="tab-content active">
                 <form action="{{ route('login') }}" method="POST" class="space-y-6">
                     @csrf
@@ -88,7 +89,7 @@
                     <div>
                         <label for="password_login" class="block text-sm font-medium mb-1">Mật khẩu</label>
                         <input type="password" id="password_login" name="password" required
-                               class="w-full px-4 py-3 bg-white/20 border border-transparent rounded-lg focus:ring-2 focus:ring-white/50 focus:outline-none text-white">
+                        class="w-full px-4 py-3 bg-white/20 border border-transparent rounded-lg focus:ring-2 focus:ring-white/50 focus:outline-none text-white">
                     </div>
 
                     <div class="flex items-center justify-between">
@@ -106,8 +107,9 @@
                 </form>
             </div>
 
+            {{-- FORM ĐĂNG KÝ --}}
             <div id="register" class="tab-content">
-                <form action="{{ route('register') }}" method="POST" class="space-y-4">
+                <form action="{{ route('register') }}" method="POST" class="space-y-4" id="registerForm">
                     @csrf
                     <div>
                         <label for="name" class="block text-sm font-medium mb-1">Họ tên</label>
@@ -121,10 +123,22 @@
                                class="w-full px-4 py-3 bg-white/20 border border-transparent rounded-lg focus:ring-2 focus:ring-white/50 focus:outline-none text-white placeholder-white/70">
                     </div>
 
+                    {{-- SỐ ĐIỆN THOẠI ĐÃ CHỈNH SỬA --}}
                     <div>
                         <label for="phone" class="block text-sm font-medium mb-1">Số điện thoại</label>
                         <input type="tel" id="phone" name="phone" value="{{ old('phone') }}" required
+                               pattern="[0-9]{10}" 
+                               minlength="10" 
+                               maxlength="10"
+                               title="Số điện thoại phải bao gồm đúng 10 chữ số"
+                               oninput="this.value = this.value.replace(/[^0-9]/g, '')"
                                class="w-full px-4 py-3 bg-white/20 border border-transparent rounded-lg focus:ring-2 focus:ring-white/50 focus:outline-none text-white placeholder-white/70">
+                    </div>
+
+                    <div>
+                        <label for="address_reg" class="block text-sm font-medium mb-1">Địa chỉ</label>
+                        <input type="text" id="address_reg" name="address" value="{{ old('address') }}" required
+                        class="w-full px-4 py-3 bg-white/20 border border-transparent rounded-lg focus:ring-2 focus:ring-white/50 focus:outline-none text-white placeholder-white/70">
                     </div>
 
                     <div>
@@ -167,8 +181,23 @@
             }
         }
 
-        // Kiểm tra xem có cần active tab register không (khi
-        // submit lỗi từ form register)   
+        // --- KIỂM TRA FORM ĐĂNG KÝ TRƯỚC KHI GỬI ---
+        const registerForm = document.getElementById('registerForm');
+        if (registerForm) {
+            registerForm.addEventListener('submit', function(e) {
+                const phoneInput = document.getElementById('phone');
+                const phoneValue = phoneInput.value;
+
+                // Kiểm tra độ dài và phải là số
+                if (phoneValue.length !== 10 || isNaN(phoneValue)) {
+                    e.preventDefault(); // Chặn gửi form
+                    alert('Số điện thoại không hợp lệ! Vui lòng nhập đúng 10 chữ số.');
+                    phoneInput.focus();
+                }
+            });
+        }
+
+        // Logic giữ tab khi redirect từ server về
         @if(session('tab') == 'register' || $errors->has('name') || $errors->has('phone') || $errors->has('password_confirmation'))
             showTab('register');
         @else
