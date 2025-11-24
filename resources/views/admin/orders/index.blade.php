@@ -8,6 +8,17 @@
         <div>
             <h1 class="text-2xl font-bold">Đơn Hàng</h1>
             <p class="text-muted-foreground">Quản lý đơn hàng và trạng thái giao hàng</p>
+            {{-- Thông báo flash --}}
+            @if(session('success'))
+                <div class="mt-2 mb-4 px-4 py-2 bg-green-100 text-green-800 rounded">
+                    {{ session('success') }}
+                </div>
+            @endif
+            @if(session('error'))
+                <div class="mt-2 mb-4 px-4 py-2 bg-red-100 text-red-800 rounded">
+                    {{ session('error') }}
+                </div>
+            @endif
         </div>
 
         <!-- Card chứa search + filter + export -->
@@ -23,19 +34,20 @@
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                             d="M21 21l-4.35-4.35m0 0A7.5 7.5 0 1110.5 3a7.5 7.5 0 016.15 13.65z" />
                     </svg>
-                    <input type="text" id="searchInput" placeholder="Tìm kiếm Customer hoặc Items..."
+                    <input type="text" id="searchInput" placeholder="Tìm kiếm Mã đơn, Khách hàng hoặc Sản phẩm..."
                         class="pl-10 w-full border border-gray-300 rounded px-3 py-2">
                 </div>
 
                 <!-- Filter (Status) -->
                 <select id="statusFilter" class="border border-gray-300 rounded px-3 py-2 w-[180px]">
                     <option value="all">Tất cả trạng thái</option>
-                    <option value="pending">Pending</option>
-                    <option value="processing">Processing</option>
-                    <option value="shipped">Shipped</option>
-                    <option value="delivered">Delivered</option>
-                    <option value="cancelled">Cancelled</option>
+                    <option value="PENDING">Chờ xử lý</option>
+                    <option value="PROCESSING">Đang xử lý</option>
+                    <option value="SHIPPED">Đã gửi hàng</option>
+                    <option value="DELIVERED">Đã giao</option>
+                    <option value="CANCELLED">Đã hủy</option>
                 </select>
+
 
                 <!-- Export -->
                 <button id="exportBtn"
@@ -56,25 +68,14 @@
                         <tr>
                             <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Mã đơn hàng</th>
                             <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Khách hàng</th>
-                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Sản phẩm</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Số sản phẩm</th>
                             <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Tổng tiền</th>
                             <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Ngày đặt</th>
                             <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Trạng thái</th>
                             <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Hành động</th>
-
                         </tr>
                     </thead>
                     <tbody id="ordersTable" class="bg-white divide-y divide-gray-200">
-                        @php
-                            $statusClasses = [
-                                'PENDING' => 'bg-yellow-100 text-yellow-700',
-                                'PROCESSING' => 'bg-blue-100 text-blue-700',
-                                'SHIPPED' => 'bg-purple-100 text-purple-700',
-                                'DELIVERED' => 'bg-emerald-100 text-emerald-700',
-                                'CANCELLED' => 'bg-red-100 text-red-700',
-                            ];
-                        @endphp
-
                         @forelse($orders as $o)
                             <tr>
                                 <td class="px-6 py-4">{{ $o['id'] }}</td>
@@ -85,19 +86,32 @@
                                     {{ isset($o['createdAt']) ? \Carbon\Carbon::parse($o['createdAt'])->format('Y-m-d') : '' }}
                                 </td>
                                 <td class="px-6 py-4">
-                                    <span
-                                        class="px-2 py-1 rounded {{ $statusClasses[$o['status'] ?? 'PENDING'] ?? 'bg-gray-100 text-gray-700' }}">
-                                        {{ ucfirst(strtolower($o['status'] ?? 'PENDING')) }}
-                                    </span>
+                                    <form action="{{ route('admin.orders.updateStatus', $o['id']) }}" method="POST">
+                                        @csrf
+                                        @method('PUT')
+                                        <select name="status" onchange="this.form.submit()"
+                                            class="border border-gray-300 rounded px-2 py-1 text-sm cursor-pointer">
+                                            <option value="PENDING" {{ $o['status'] == 'PENDING' ? 'selected' : '' }}
+                                                style="background-color:#FEF3C7; color:#B45309;">Chờ xử lý
+                                            </option>
+                                            <option value="PROCESSING" {{ $o['status'] == 'PROCESSING' ? 'selected' : '' }}
+                                                style="background-color:#DBEAFE; color:#1D4ED8;">Đang xử lý
+                                            </option>
+                                            <option value="SHIPPED" {{ $o['status'] == 'SHIPPED' ? 'selected' : '' }}
+                                                style="background-color:#EDE9FE; color:#7C3AED;">Đã gửi hàng
+                                            </option>
+                                            <option value="DELIVERED" {{ $o['status'] == 'DELIVERED' ? 'selected' : '' }}
+                                                style="background-color:#D1FAE5; color:#065F46;">Đã giao
+                                            </option>
+                                            <option value="CANCELLED" {{ $o['status'] == 'CANCELLED' ? 'selected' : '' }}
+                                                style="background-color:#FEE2E2; color:#991B1B;">Đã hủy
+                                            </option>
+                                        </select>
+                                    </form>
                                 </td>
                                 <td class="px-6 py-4 flex gap-2">
                                     <a href="{{ route('admin.orders.show', $o['id']) }}"
                                         class="text-blue-600 hover:text-blue-700 hover:bg-blue-50 px-2 py-1 rounded flex items-center gap-1">
-                                        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24"
-                                            stroke="currentColor">
-                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                                d="M15 12H9m12 0a9 9 0 11-18 0 9 9 0 0118 0z" />
-                                        </svg>
                                         View
                                     </a>
                                 </td>
@@ -112,7 +126,6 @@
                 <div class="mt-4">
                     {{ $orders->links() }}
                 </div>
-
             </div>
         </div>
     </div>
@@ -124,22 +137,36 @@
         const statusFilter = document.getElementById('statusFilter');
         const tableRows = document.querySelectorAll('#ordersTable tr');
         const exportBtn = document.getElementById('exportBtn');
-
         function filterTable() {
             const term = searchInput.value.toLowerCase();
-            const filter = statusFilter.value.toLowerCase();
-            tableRows.forEach(row => {
-                const customer = row.cells[1]?.innerText.toLowerCase() || '';
-                const items = row.cells[2]?.innerText.toLowerCase() || '';
-                const status = row.cells[5]?.innerText.toLowerCase() || '';
-                const matchesSearch = customer.includes(term) || items.includes(term);
-                const matchesFilter = filter === 'all' || status === filter;
+            const filter = statusFilter.value; // PENDING, PROCESSING, ...
+
+            document.querySelectorAll('#ordersTable tr').forEach(row => {
+                const cells = row.querySelectorAll('td');
+                if (!cells.length) return;
+
+                const orderId = cells[0]?.innerText.toLowerCase() || '';
+                const customer = cells[1]?.innerText.toLowerCase() || '';
+                const items = cells[2]?.innerText.toLowerCase() || '';
+
+                const select = cells[5]?.querySelector('select');
+                const rowStatusValue = select?.value || '';
+                const rowStatusLabel = select?.selectedOptions[0]?.text.toLowerCase() || '';
+
+                const matchesSearch = orderId.includes(term)
+                    || customer.includes(term)
+                    || items.includes(term)
+                    || rowStatusLabel.includes(term); // search theo label
+                const matchesFilter = filter === 'all' || rowStatusValue === filter;
+
                 row.style.display = (matchesSearch && matchesFilter) ? '' : 'none';
             });
         }
 
+
         searchInput.addEventListener('input', filterTable);
         statusFilter.addEventListener('change', filterTable);
+
 
         // Export CSV
         exportBtn.addEventListener('click', function () {
@@ -160,6 +187,24 @@
             link.href = URL.createObjectURL(blob);
             link.download = 'orders.csv';
             link.click();
+        });
+
+        // Cập nhật màu dropdown status
+        document.querySelectorAll('select[name="status"]').forEach(select => {
+            function updateColor() {
+                const colors = {
+                    PENDING: { bg: '#FEF3C7', color: '#B45309' },
+                    PROCESSING: { bg: '#DBEAFE', color: '#1D4ED8' },
+                    SHIPPED: { bg: '#EDE9FE', color: '#7C3AED' },
+                    DELIVERED: { bg: '#D1FAE5', color: '#065F46' },
+                    CANCELLED: { bg: '#FEE2E2', color: '#991B1B' }
+                };
+                const val = select.value;
+                select.style.backgroundColor = colors[val].bg;
+                select.style.color = colors[val].color;
+            }
+            updateColor();
+            select.addEventListener('change', updateColor);
         });
     </script>
 @endpush

@@ -101,9 +101,9 @@
                     </span>
                   </div>
 
-                  <div class="text-sm text-gray-500">Serial: {{ $c['productSerial'] ?? 'Không có' }}</div>
+                  <div class="text-sm text-gray-500">Số Serial: {{ $c['productSerial'] ?? 'Không có' }}</div>
                   <div class="text-sm text-gray-500">Claim ID: {{ $c['id'] ?? ($c['claimId'] ?? '-') }}</div>
-                  <p class="mt-2 text-gray-600">{!! nl2br(e($c['issueDesc'] ?? $c['description'] ?? '')) !!}</p>
+                  <p class="mt-2 text-gray-600">Vấn đề:  {!! nl2br(e($c['issueDesc'] ?? $c['description'] ?? '')) !!}</p>
                 </div>
 
                 <div class="text-sm text-gray-400">

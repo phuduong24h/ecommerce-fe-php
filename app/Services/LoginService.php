@@ -40,7 +40,7 @@ class LoginService
             $response = Http::timeout(10)->post("{$this->authBaseUrl}/login", $payload);
             $json = $response->json();
 
-            // Xử lý lỗi từ Backend hoặc lỗi mạng
+            // Xử lý lỗi
             if ($response->failed() || is_null($json) || !($json['success'] ?? false)) {
 
                 $message = $json['message'] ?? 'INVALID_CREDENTIALS';
