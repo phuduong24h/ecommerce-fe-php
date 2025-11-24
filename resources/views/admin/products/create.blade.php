@@ -1,4 +1,6 @@
+
 @extends('layouts.admin')
+
 @section('title', 'Thêm sản phẩm')
 
 @section('content')
@@ -12,14 +14,7 @@
         </div>
     @endif
 
-    {{-- Thông báo lỗi từ Controller trả về (Quan trọng) --}}
-    @if(session('error'))
-        <div class="bg-red-100 text-red-700 p-3 rounded mb-4 text-sm">
-            {{ session('error') }}
-        </div>
-    @endif
-
-    {{-- Thông báo lỗi Validate --}}
+    {{-- Thông báo lỗi --}}
     @if($errors->any())
         <div class="bg-red-100 text-red-700 p-3 rounded mb-4 text-sm">
             @foreach($errors->all() as $error)
@@ -28,114 +23,156 @@
         </div>
     @endif
 
-    <form action="{{ route('admin.products.store') }}" method="POST" class="space-y-4">
+    <form action="{{ route('admin.products.store') }}" method="POST" class="space-y-6">
         @csrf
 
-        {{-- Tên sản phẩm --}}
-        <div>
-            <label class="block text-sm font-medium text-gray-700">Tên sản phẩm</label>
-            <input type="text" name="name" value="{{ old('name') }}" class="mt-1 block w-full border border-gray-300 rounded px-3 py-2" placeholder="Nhập tên sản phẩm" required>
-        </div>
-
-        {{-- Mô tả --}}
-        <div>
-            <label class="block text-sm font-medium text-gray-700">Mô tả</label>
-            <textarea name="description" class="mt-1 block w-full border border-gray-300 rounded px-3 py-2" placeholder="Nhập mô tả sản phẩm">{{ old('description') }}</textarea>
-        </div>
-
-        {{-- Giá & Tồn kho --}}
-        <div class="grid grid-cols-2 gap-4">
+        {{-- THÔNG TIN CƠ BẢN --}}
+        <div class="space-y-4">
             <div>
-                <label class="block text-sm font-medium text-gray-700">Giá</label>
-                <input type="number" name="price" value="{{ old('price') }}" class="mt-1 block w-full border border-gray-300 rounded px-3 py-2" required>
+                <label class="block text-sm font-medium text-gray-700">Tên sản phẩm</label>
+                <input type="text" name="name" value="{{ old('name') }}" placeholder="Nhập tên sản phẩm"
+                    class="mt-1 w-full border border-gray-300 rounded px-3 py-2" required>
             </div>
+
             <div>
-                <label class="block text-sm font-medium text-gray-700">Tồn kho</label>
-                <input type="number" name="stock" value="{{ old('stock') }}" class="mt-1 block w-full border border-gray-300 rounded px-3 py-2" required>
+                <label class="block text-sm font-medium text-gray-700">Mô tả</label>
+                <textarea name="description" placeholder="Nhập mô tả sản phẩm"
+                    class="mt-1 w-full border border-gray-300 rounded px-3 py-2">{{ old('description') }}</textarea>
             </div>
-        </div>
 
-        {{-- Danh mục --}}
-        <div>
-            <label class="block text-sm font-medium text-gray-700">Danh mục</label>
-            <select name="categoryId" class="mt-1 block w-full border border-gray-300 rounded px-3 py-2" required>
-                <option value="">-- Chọn danh mục --</option>
-                @foreach($categories as $category)
-                    <option value="{{ $category['id'] }}" {{ old('categoryId') == $category['id'] ? 'selected' : '' }}>
-                        {{ $category['name'] }}
-                    </option>
-                @endforeach
-            </select>
-        </div>
+            <div class="grid grid-cols-2 gap-4">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700">Giá</label>
+                    <input type="number" name="price" value="{{ old('price') }}"
+                        class="mt-1 w-full border border-gray-300 rounded px-3 py-2" required>
+                </div>
 
-        {{-- Hình ảnh --}}
-        <div>
-            <label class="block text-sm font-medium text-gray-700">Hình ảnh</label>
-            
-            <div id="image-list" class="space-y-2">
-                {{-- Input mặc định cho URL --}}
-                <div class="flex gap-2 items-center">
-                    <input type="text" name="images[]" value="{{ old('images.0') }}" 
-                           class="block w-full border border-gray-300 rounded px-3 py-2" 
-                           placeholder="https://example.com/image.jpg">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700">Tồn kho</label>
+                    <input type="number" name="stock" value="{{ old('stock') }}"
+                        class="mt-1 w-full border border-gray-300 rounded px-3 py-2" required>
                 </div>
             </div>
 
-            <div class="mt-2 flex gap-4">
-                <button type="button" id="addUrlBtn" class="text-blue-500 text-sm hover:underline">+ Thêm URL ảnh</button>
-                
-                {{-- Nút Upload file --}}
-                <label class="text-green-500 text-sm hover:underline cursor-pointer">
-                    + Upload ảnh từ máy
-                    <input type="file" id="fileUpload" class="hidden" accept="image/*">
-                </label>
+            <div>
+                <label class="block text-sm font-medium text-gray-700">Trạng thái</label>
+                <select name="isActive" class="mt-1 w-full border border-gray-300 rounded px-3 py-2">
+                    <option value="1" {{ old('isActive', 1) == 1 ? 'selected' : '' }}>Đang bán</option>
+                    <option value="0" {{ old('isActive') == 0 ? 'selected' : '' }}>Ngưng bán</option>
+                </select>
             </div>
-            @error('images') <p class="text-red-500 text-sm mt-1">{{ $message }}</p> @enderror
+
+            <div>
+                <label class="block text-sm font-medium text-gray-700">Danh mục</label>
+                <select name="categoryId" class="mt-1 w-full border border-gray-300 rounded px-3 py-2" required>
+                    <option value="">-- Chọn danh mục --</option>
+                    @foreach($categories as $category)
+                        <option value="{{ $category['id'] }}" {{ old('categoryId') == $category['id'] ? 'selected' : '' }}>
+                            {{ $category['name'] }}
+                        </option>
+                    @endforeach
+                </select>
+            </div>
+
+            <div>
+                <label class="block text-sm font-medium text-gray-700">Chính sách bảo hành</label>
+                <select name="warrantyPolicyId" class="mt-1 w-full border border-gray-300 rounded px-3 py-2">
+                    <option value="">-- Chọn chính sách --</option>
+                    @foreach($policies as $policy)
+                        <option value="{{ $policy['id'] }}" {{ old('warrantyPolicyId') == $policy['id'] ? 'selected' : '' }}>
+                            {{ $policy['name'] }}
+                        </option>
+                    @endforeach
+                </select>
+            </div>
         </div>
 
-        <button type="submit" class="bg-gradient-to-r from-purple-500 to-pink-500 text-white py-2 px-4 rounded hover:from-purple-600 hover:to-pink-600">
+        {{-- BIẾN THỂ --}}
+        <div class="space-y-2">
+            <label class="block text-sm font-medium text-gray-700">Biến thể sản phẩm</label>
+
+            <div id="variant-list" class="space-y-3">
+                @if(old('variants'))
+                    @foreach(old('variants') as $i => $variant)
+                        <div class="border p-3 rounded space-y-2 variant-item">
+                            <input type="text" name="variants[{{ $i }}][name]" value="{{ $variant['name'] ?? '' }}"
+                                placeholder="Tên biến thể" class="w-full border border-gray-300 rounded px-3 py-2">
+
+                            <input type="text" name="variants[{{ $i }}][value]" value="{{ $variant['value'] ?? '' }}"
+                                placeholder="Giá trị" class="w-full border border-gray-300 rounded px-3 py-2">
+
+                            <input type="number" name="variants[{{ $i }}][price]" value="{{ $variant['price'] ?? 0 }}"
+                                placeholder="Giá biến thể" class="w-full border border-gray-300 rounded px-3 py-2">
+
+                            <input type="number" name="variants[{{ $i }}][stock]" value="{{ $variant['stock'] ?? 0 }}"
+                                placeholder="Tồn kho" class="w-full border border-gray-300 rounded px-3 py-2">
+
+                            <button type="button" class="removeVariantBtn text-red-500 text-sm">Xóa</button>
+                        </div>
+                    @endforeach
+                @endif
+            </div>
+
+            <button type="button" id="addVariantBtn" class="text-green-600 text-sm">+ Thêm biến thể</button>
+        </div>
+
+        {{-- HÌNH ẢNH --}}
+        <div>
+            <label class="block text-sm font-medium text-gray-700">Hình ảnh (URL)</label>
+
+            <div id="image-list" class="space-y-2">
+                <input type="text" name="images[]" value="{{ old('images.0') }}"
+                    class="w-full border border-gray-300 rounded px-3 py-2"
+                    placeholder="https://example.com/image.jpg">
+            </div>
+
+            <button type="button" id="addImageBtn" class="text-blue-600 text-sm mt-1">+ Thêm hình ảnh</button>
+        </div>
+
+        {{-- SUBMIT --}}
+        <button type="submit"
+            class="bg-gradient-to-r from-purple-500 to-pink-500 text-white px-4 py-2 rounded shadow hover:from-purple-600 hover:to-pink-600">
             Lưu sản phẩm
         </button>
     </form>
 </div>
 
+{{-- SCRIPT --}}
 <script>
-    const imageList = document.getElementById('image-list');
+    let variantIndex = document.querySelectorAll('.variant-item').length;
 
-    // Thêm ô nhập URL
-    document.getElementById('addUrlBtn').addEventListener('click', function() {
+    const variantList = document.getElementById('variant-list');
+    const addVariantBtn = document.getElementById('addVariantBtn');
+
+    addVariantBtn.addEventListener('click', () => {
         const div = document.createElement('div');
-        div.className = 'flex gap-2 items-center';
+        div.classList.add('border', 'p-3', 'rounded', 'space-y-2', 'variant-item');
+
         div.innerHTML = `
-            <input type="text" name="images[]" class="block w-full border border-gray-300 rounded px-3 py-2" placeholder="https://example.com/image.jpg">
-            <button type="button" onclick="this.parentElement.remove()" class="text-red-500 text-sm">Xóa</button>
+            <input type="text" name="variants[${variantIndex}][name]" placeholder="Tên biến thể" class="w-full border border-gray-300 rounded px-3 py-2">
+            <input type="text" name="variants[${variantIndex}][value]" placeholder="Giá trị" class="w-full border border-gray-300 rounded px-3 py-2">
+            <input type="number" name="variants[${variantIndex}][price]" placeholder="Giá biến thể" class="w-full border border-gray-300 rounded px-3 py-2">
+            <input type="number" name="variants[${variantIndex}][stock]" placeholder="Tồn kho" class="w-full border border-gray-300 rounded px-3 py-2">
+            <button type="button" class="removeVariantBtn text-red-500 text-sm">Xóa</button>
         `;
-        imageList.appendChild(div);
+        variantList.appendChild(div);
+
+        variantIndex++;
     });
 
-    // Xử lý upload file -> Base64 -> Input Hidden
-    document.getElementById('fileUpload').addEventListener('change', function(event) {
-        const file = event.target.files[0];
-        if (!file) return;
+    variantList.addEventListener('click', function (e) {
+        if (e.target.classList.contains('removeVariantBtn')) {
+            e.target.closest('.variant-item').remove();
+        }
+    });
 
-        const reader = new FileReader();
-        reader.onload = function(e) {
-            const base64String = e.target.result;
-            const div = document.createElement('div');
-            div.className = 'flex gap-2 items-center border p-2 rounded bg-gray-50';
-            
-            // Input hidden: chứa dữ liệu thật gửi đi
-            // Img: hiển thị preview
-            div.innerHTML = `
-                <img src="${base64String}" class="w-10 h-10 object-cover rounded border">
-                <input type="hidden" name="images[]" value="${base64String}"> 
-                <span class="text-sm text-gray-600 truncate flex-1 ml-2">Ảnh tải lên (Base64)</span>
-                <button type="button" onclick="this.parentElement.remove()" class="text-red-500 text-sm ml-auto">Xóa</button>
-            `;
-            imageList.appendChild(div);
-        };
-        reader.readAsDataURL(file);
-        event.target.value = ''; 
+    document.getElementById('addImageBtn').addEventListener('click', () => {
+        const div = document.createElement('div');
+        div.innerHTML = `
+            <input type="text" name="images[]" class="w-full border border-gray-300 rounded px-3 py-2"
+            placeholder="https://example.com/image.jpg">
+        `;
+        document.getElementById('image-list').appendChild(div);
     });
 </script>
 @endsection

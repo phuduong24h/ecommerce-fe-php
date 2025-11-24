@@ -117,7 +117,9 @@ class WarrantyController extends Controller
         $result = $this->serialServiceUser->checkSerialWarranty($serialCode);
 
         if (!($result['success'] ?? false)) {
-            return back()->withErrors(["msg" => $result['message'] ?? 'Không thể kiểm tra bảo hành']);
+            return back()->withErrors([
+                "msg" => $result['message'] ?? 'Không thể kiểm tra bảo hành'
+            ]);
         }
 
         $data = $result['data'] ?? null;
@@ -130,19 +132,22 @@ class WarrantyController extends Controller
         $statusVN = match ($data['status'] ?? '') {
             'VALID' => 'Còn hạn',
             'EXPIRED' => 'Hết hạn',
+            'NO_WARRANTY' => 'Không có bảo hành',
             default => 'Không xác định',
         };
 
+        // Sử dụng fallback để tránh Undefined array key
         $productInfo = [
-            'serialCode' => $data['serial'],
-            'productName' => $data['productName'],
-            'soldAt' => date("d/m/Y", strtotime($data['soldAt'])),
+            'serialCode' => $data['serial'] ?? $serialCode,
+            'productName' => $data['productName'] ?? 'Không xác định',
+            'soldAt' => isset($data['soldAt']) ? date("d/m/Y", strtotime($data['soldAt'])) : 'N/A',
             'warrantyStatus' => $statusVN,
             'daysLeft' => max(0, $data['daysLeft'] ?? 0),
         ];
 
         return back()->with("productInfo", $productInfo);
     }
+
     /**
      * Submit yêu cầu bảo hành
      */

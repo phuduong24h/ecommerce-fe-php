@@ -18,9 +18,9 @@
             <div class="rounded-lg border-2 hover:border-cyan-200 transition-colors bg-white shadow-sm">
                 <div class="p-6">
                     <div class="flex items-start justify-between mb-4">
-                        <div class="h-12 w-12 rounded-lg bg-gradient-to-br from-cyan-100 to-blue-100 flex items-center justify-center">
-                            <svg class="h-6 w-6 text-cyan-600" fill="none" stroke="currentColor"
-                                viewBox="0 0 24 24">
+                        <div
+                            class="h-12 w-12 rounded-lg bg-gradient-to-br from-cyan-100 to-blue-100 flex items-center justify-center">
+                            <svg class="h-6 w-6 text-cyan-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                                     d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z" />
                             </svg>
@@ -33,15 +33,14 @@
                                         d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
                                 </svg>
                             </a>
-                            <form action="{{ route('admin.settings.categories.destroy', $cat['id']) }}"
-                                method="POST" onsubmit="return confirmDelete()">
+                            <form action="{{ route('admin.settings.categories.destroy', $cat['id']) }}" method="POST"
+                                onsubmit="return confirmDelete()">
                                 @csrf
                                 @method('DELETE')
                                 <button type="submit"
                                     class="h-8 w-8 p-0 rounded-md text-red-600 hover:bg-red-50 flex items-center justify-center">
                                     <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path stroke-linecap="round" stroke-linejoin="round"
-                                            stroke-width="2"
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                                             d="M19 7l-.867 12.142A2.5 2.5 0 0116.138 21H7.862a2.5 2.5 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
                                     </svg>
                                 </button>
@@ -61,35 +60,35 @@
     <!-- Pagination -->
     <div class="mt-4">
         {{ $categories->appends([
-            'activeTab' => 'categories',
-            'page_promotions' => request()->get('page_promotions'),
-            'page_centers' => request()->get('page_centers'),
-            'page_serials' => request()->get('page_serials'),
-            'page_logs' => request()->get('page_logs'),
-        ])->links() }}
+    'activeTab' => 'categories',
+    'page_promotions' => request()->get('page_promotions'),
+    'page_centers' => request()->get('page_centers'),
+    'page_serials' => request()->get('page_serials'),
+    'page_logs' => request()->get('page_logs'),
+])->links() }}
     </div>
 </div>
 
 @push('scripts')
-<script>
-    // Search filter
-    document.addEventListener('DOMContentLoaded', () => {
-        const searchCategories = document.getElementById('searchCategories');
-        if (searchCategories) {
-            searchCategories.addEventListener('input', () => {
-                const term = searchCategories.value.toLowerCase();
-                document.querySelectorAll('#categoryGrid > div').forEach(card => {
-                    const name = card.querySelector('h3')?.innerText.toLowerCase() || '';
-                    const desc = card.querySelector('p')?.innerText.toLowerCase() || '';
-                    card.style.display = (name.includes(term) || desc.includes(term)) ? '' : 'none';
+    <script>
+        // Search filter
+        document.addEventListener('DOMContentLoaded', () => {
+            const searchCategories = document.getElementById('searchCategories');
+            if (searchCategories) {
+                searchCategories.addEventListener('input', () => {
+                    const term = searchCategories.value.toLowerCase();
+                    document.querySelectorAll('#categoryGrid > div').forEach(card => {
+                        const name = card.querySelector('h3')?.innerText.toLowerCase() || '';
+                        card.style.display = name.includes(term) ? '' : 'none';
+                    });
                 });
-            });
-        }
-    });
+            }
+        });
 
-    // Confirm delete
-    function confirmDelete() {
-        return confirm('Bạn có chắc chắn muốn xóa danh mục này không?');
-    }
-</script>
+
+        // Confirm delete
+        function confirmDelete() {
+            return confirm('Bạn có chắc chắn muốn xóa danh mục này không?');
+        }
+    </script>
 @endpush
