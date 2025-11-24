@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Services\ProductDetailService;
 use App\Services\WarrantyServiceUser;
 use Illuminate\Http\Request;
+use Carbon\Carbon;
 
 
 // Thắng
@@ -30,6 +31,27 @@ class ProductDetailController extends Controller
         if (!$product) {
             return redirect()->route('home')->with('error', 'Sản phẩm không tồn tại.');
         }
+
+        // --- XỬ LÝ KHUYẾN MÃI ---
+        $promoData = [
+            'has_discount' => false,
+            'discount_percent' => 0,
+        ];
+
+        if (!empty($product['promotion'])) {
+            $promo = $product['promotion'];
+            $now = Carbon::now();
+            $start = Carbon::parse($promo['startDate']);
+            $end = Carbon::parse($promo['endDate']);
+
+            if (($promo['isActive'] ?? false) && $now->between($start, $end)) {
+                $promoData['has_discount'] = true;
+                $promoData['discount_percent'] = $promo['discount'];
+            }
+        }
+
+        // Gán thông tin khuyến mãi vào product để View dùng
+        $product['promo_data'] = $promoData;
 
         // 2. Lấy danh sách bảo hành
         $policies = $this->warrantyService->getAllPolicies();
