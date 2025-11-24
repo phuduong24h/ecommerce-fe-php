@@ -12,8 +12,8 @@
         <div class="text-right">
 
             <span class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium
-                {{ ($order['status'] ?? '') === 'DELIVERED' 
-                    ? 'bg-green-100 text-green-800' 
+                {{ ($order['status'] ?? '') === 'DELIVERED'
+                    ? 'bg-green-100 text-green-800'
                     : 'bg-purple-100 text-purple-800' }}">
                 {{ strtoupper($order['status'] ?? 'PENDING') }}
             </span>
@@ -32,7 +32,7 @@
             <span class="text-gray-700 font-medium">
                 {{ $item['name'] ?? 'Sản phẩm' }}
             </span>
-            
+
             {{-- 🟢 HIỂN THỊ VARIANT Ở LỊCH SỬ ĐƠN HÀNG --}}
             @if(!empty($item['variant']))
                 <span class="text-xs text-gray-500">

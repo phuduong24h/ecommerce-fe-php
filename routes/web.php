@@ -48,6 +48,7 @@ Route::prefix('admin')->name('admin.')->middleware([AdminAuth::class])->group(fu
     Route::delete('/products/{id}', [ProductController::class, 'destroy'])->name('products.destroy');
     //Oders
     Route::resource('orders', OrderController::class);
+    Route::put('/orders/{id}/status', [OrderController::class, 'updateStatus'])->name('orders.updateStatus');
 
     ///Users
     Route::resource('users', UserController::class);

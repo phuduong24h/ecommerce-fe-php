@@ -38,13 +38,19 @@ class LoginController extends Controller
         $validator = Validator::make($request->all(), [
             'email' => 'required|email',
             'password' => 'required|string',
+            'address' => 'nullable|string|max:255', // Thêm validate address
         ]);
 
         if ($validator->fails()) {
             return back()->withErrors($validator)->withInput();
         }
 
-        $result = $this->loginService->login($request->email, $request->password);
+        // Truyền thêm address vào service
+        $result = $this->loginService->login(
+            $request->email,
+            $request->password,
+            $request->address // Truyền address
+        );
 
         if (!$result['success']) {
             return back()->withErrors(['email' => $result['message'] ?? 'Sai email hoặc mật khẩu.'])->withInput();
@@ -68,7 +74,8 @@ class LoginController extends Controller
             'name' => 'required|string|max:255',
             'email' => 'required|email',
             'phone' => 'required|string|max:20',
-            'password' => 'required|string|min:6|confirmed', // 'password_confirmation'
+            'address' => 'required|string|max:255', // Bắt buộc nhập địa chỉ khi đăng ký
+            'password' => 'required|string|min:6|confirmed',
         ]);
 
         if ($validator->fails()) {
@@ -79,6 +86,7 @@ class LoginController extends Controller
             'name' => $request->name,
             'email' => $request->email,
             'phone' => $request->phone,
+            'address' => $request->address, // Thêm address vào mảng
             'password' => $request->password,
         ];
 
