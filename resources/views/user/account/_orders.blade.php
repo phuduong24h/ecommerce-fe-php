@@ -1,32 +1,29 @@
 @forelse($orders as $order)
 <div class="border rounded-lg p-6 mb-4 hover:shadow-md transition-shadow">
 
-    <!-- Order Header -->
     <div class="flex justify-between items-start mb-4">
         <div>
             <h3 class="text-lg font-semibold text-gray-900">Đơn Hàng {{ $order['id'] }}</h3>
             <p class="text-sm text-gray-500">
-                Đặt vào {{ date('d/m/Y H:i', strtotime($order['createdAt'])) }}
+                {{-- SỬA ĐOẠN NÀY: Chuyển sang múi giờ Asia/Ho_Chi_Minh --}}
+                Đặt vào {{ \Carbon\Carbon::parse($order['createdAt'])->setTimezone('Asia/Ho_Chi_Minh')->format('d/m/Y H:i') }}
             </p>
         </div>
         <div class="text-right">
 
-            <!-- GIỮ LẠI TIẾNG ANH -->
             <span class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium
-                {{ ($order['status'] ?? '') === 'DELIVERED' 
-                    ? 'bg-green-100 text-green-800' 
+                {{ ($order['status'] ?? '') === 'DELIVERED'
+                    ? 'bg-green-100 text-green-800'
                     : 'bg-purple-100 text-purple-800' }}">
                 {{ strtoupper($order['status'] ?? 'PENDING') }}
             </span>
 
-            <!-- Tổng tiền theo USD -->
             <p class="text-lg font-bold text-cyan-600 mt-2">
                 ${{ number_format($order['totalAmount'] ?? 0, 2) }}
             </p>
         </div>
     </div>
 
-    <!-- Order Items (chỉnh) -->
     <div class="border-t pt-4">
     @foreach($order['items'] as $item)
     <div class="flex justify-between py-2">
@@ -35,7 +32,7 @@
             <span class="text-gray-700 font-medium">
                 {{ $item['name'] ?? 'Sản phẩm' }}
             </span>
-            
+
             {{-- 🟢 HIỂN THỊ VARIANT Ở LỊCH SỬ ĐƠN HÀNG --}}
             @if(!empty($item['variant']))
                 <span class="text-xs text-gray-500">

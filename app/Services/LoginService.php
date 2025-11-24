@@ -20,7 +20,6 @@ class LoginService
      *
      * @param string $email
      * @param string $password
-     * @param string|null $address
      * @return array
      */
     public function login($email, $password, $address = null)
@@ -32,6 +31,7 @@ class LoginService
                 'password' => $password,
             ];
 
+            // Nếu có address thì gửi lên
             if ($address) {
                 $payload['address'] = $address;
             }
@@ -70,6 +70,7 @@ class LoginService
     public function register(array $details)
     {
         try {
+            // Gọi API đăng ký
             $response = Http::timeout(10)->post("{$this->authBaseUrl}/register", $details);
             $json = $response->json();
 
