@@ -168,7 +168,7 @@ class CartController extends Controller
 
         // 3. Gọi API Orders bằng Http Facade (để kèm User Token)
         // Config URL của bạn là localhost:3000, cần nối thêm /api/v1/orders
-        $url = config('services.api.url') . '/api/v1/orders';
+        $url = config('services.api.url') . '/api/v1/orders'; 
 
         try {
             $response = Http::withToken(session('user_token'))
