@@ -7,7 +7,7 @@
             <svg class="mr-2 h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
             </svg>
-            Add Promotion
+            Thêm Khuyến Mãi
         </a>
     </div>
 
@@ -16,10 +16,10 @@
         <table class="w-full">
             <thead class="border-b bg-muted/50">
                 <tr>
-                    <th class="h-12 px-4 text-left align-middle font-medium text-muted-foreground text-xs uppercase tracking-wider">Promotion Code</th>
-                    <th class="h-12 px-4 text-left align-middle font-medium text-muted-foreground text-xs uppercase tracking-wider">Discount</th>
-                    <th class="h-12 px-4 text-left align-middle font-medium text-muted-foreground text-xs uppercase tracking-wider">Status</th>
-                    <th class="h-12 px-4 text-left align-middle font-medium text-muted-foreground text-xs uppercase tracking-wider">Actions</th>
+                    <th class="h-12 px-4 text-left align-middle font-medium text-muted-foreground text-xs uppercase tracking-wider">Mã khuyến mãi</th>
+                    <th class="h-12 px-4 text-left align-middle font-medium text-muted-foreground text-xs uppercase tracking-wider">Chiết khấu</th>
+                    <th class="h-12 px-4 text-left align-middle font-medium text-muted-foreground text-xs uppercase tracking-wider">Trạng thái</th>
+                    <th class="h-12 px-4 text-left align-middle font-medium text-muted-foreground text-xs uppercase tracking-wider">Hành động</th>
                 </tr>
             </thead>
             <tbody class="divide-y">

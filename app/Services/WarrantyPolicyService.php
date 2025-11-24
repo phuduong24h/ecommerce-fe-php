@@ -91,5 +91,11 @@ class WarrantyPolicyService
             'requiresSerial' => isset($data['requiresSerial']) ? (bool) $data['requiresSerial'] : false,
         ];
     }
+    public function getById($id)
+{
+    $policies = $this->getAllPolicies();
+    return collect($policies)->firstWhere('id', $id) ?? null;
+}
+
 
 }

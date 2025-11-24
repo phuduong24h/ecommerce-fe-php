@@ -53,17 +53,7 @@
             @error('status')
                 <p class="text-red-600 text-sm mt-1">{{ $message }}</p>
             @enderror
-        </div>
-
-        <!-- Registered By -->
-        <div>
-            <label for="registeredBy" class="block text-sm font-medium text-gray-700 mb-1">Registered By</label>
-            <input type="text" name="registeredBy" id="registeredBy" value="{{ old('registeredBy') }}"
-                   class="w-full border border-gray-300 rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-transparent">
-            @error('registeredBy')
-                <p class="text-red-600 text-sm mt-1">{{ $message }}</p>
-            @enderror
-        </div>
+</div>
 
         <!-- Buttons -->
         <div class="flex justify-end gap-2">
@@ -75,3 +65,16 @@
     </form>
 </div>
 @endsection
+
+
+
+        <!-- Header: Add Serial button -->
+        <div class="flex justify-end">
+            <a href="{{ route('admin.settings.serials.create') }}"
+               class="inline-flex items-center justify-center rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 h-10 px-4 py-2 bg-gradient-to-r from-cyan-500 to-blue-500 hover:from-cyan-600 hover:to-blue-600 text-white">
+                <svg class="mr-2 h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
+                </svg>
+                Add Serial
+            </a>
+        </div>

@@ -35,9 +35,9 @@ Route::get('/', [InterfaceController::class, 'index'])->name('home');
 // 1. ADMIN ROUTES (GIAO DIỆN)
 // ========================================
 Route::prefix('admin')->name('admin.')->middleware([AdminAuth::class])->group(function () {
-    Route::get('/admin/logout', [AuthController::class, 'logout'])->name('admin.logout');
+    Route::get('/logout', [AuthController::class, 'logout'])->name('logout');
     //Dashboard
-    Route::get('/', [DashboardController::class, 'index'])->name('dashboard');
+    //Route::get('/', [DashboardController::class, 'index'])->name('dashboard');
     Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
     //Products
     Route::get('/products', [ProductController::class, 'index'])->name('products.index');
@@ -101,11 +101,6 @@ Route::prefix('admin')->name('admin.')->middleware([AdminAuth::class])->group(fu
         Route::get('logs', [SettingController::class, 'index'])->name('logs.index'); // danh sách logs,
         Route::delete('logs/{id}', [SettingController::class, 'deleteLog'])->name('logs.destroy'); // xóa log,
     });
-
-
-    // Route::get('/reports/sales/{year?}', [DashboardController::class, 'salesReport'])
-    //     ->name('reports.sales')
-    //     ->where('year', '[0-9]{4}');
 });
 
 // ========================================
@@ -154,7 +149,6 @@ Route::prefix('account')->name('account.')->group(function () {
 //checkout routes
 Route::get('/checkout', [CheckoutController::class, 'index'])->name('checkout');
 Route::post('/checkout/submit', [CheckoutController::class, 'submit']);
-
 // Cart Routes
 Route::get('/cart', [CartController::class, 'index'])->name('cart.index');
 Route::post('/cart/update', [CartController::class, 'update'])->name('cart.update');
@@ -169,9 +163,11 @@ Route::prefix('warranty')->group(function () {
     Route::post('/claim', [WarrantyController::class, 'submitClaim'])->name('warranty.claim');
 
     // AJAX
-    Route::post('/ajax-serial', 
+    Route::post(
+        '/ajax-serial',
         [WarrantyController::class, 'ajaxGetProductBySerial']
     )->name('warranty.ajax.serial');
 });
 
-require __DIR__.'/admin_auth.php';
+require __DIR__ . '/admin_auth.php';
+
