@@ -15,24 +15,42 @@ class LoginService
         $this->authBaseUrl = config('services.api.url', 'http://localhost:3000') . '/api/v1/auth';
     }
 
-    public function login($email, $password)
+    /**
+     * Gọi API đăng nhập
+     *
+     * @param string $email
+     * @param string $password
+     * @return array
+     */
+    public function login($email, $password, $address = null)
     {
         try {
-            $response = Http::timeout(10)->post("{$this->authBaseUrl}/login", [
+            // Chuẩn bị dữ liệu gửi đi
+            $payload = [
                 'email' => $email,
                 'password' => $password,
-            ]);
+            ];
 
+            // Nếu có address thì gửi lên
+            if ($address) {
+                $payload['address'] = $address;
+            }
+
+            // Gọi API
+            $response = Http::timeout(10)->post("{$this->authBaseUrl}/login", $payload);
             $json = $response->json();
 
-            if ($response->failed() || is_null($json) || !$json['success']) {
+            // Xử lý lỗi từ Backend hoặc lỗi mạng
+            if ($response->failed() || is_null($json) || !($json['success'] ?? false)) {
 
-                // Backend trả message trực tiếp
                 $message = $json['message'] ?? 'INVALID_CREDENTIALS';
 
-                // Tùy chỉnh câu thông báo
                 if ($message === 'INVALID_CREDENTIALS') {
                     $message = 'Sai email hoặc mật khẩu';
+                }
+
+                if ($message === 'MISSING_FIELDS') {
+                    $message = 'Vui lòng nhập đầy đủ thông tin';
                 }
 
                 return ['success' => false, 'message' => $message];
@@ -45,20 +63,28 @@ class LoginService
 
         } catch (\Exception $e) {
             Log::error('Exception (login): ' . $e->getMessage());
-            return ['success' => false, 'message' => 'Lỗi hệ thống. Vui lòng thử lại.'];
+            return ['success' => false, 'message' => 'Lỗi kết nối đến máy chủ.'];
         }
     }
 
     public function register(array $details)
     {
         try {
+            // Gọi API đăng ký
             $response = Http::timeout(10)->post("{$this->authBaseUrl}/register", $details);
             $json = $response->json();
 
-            if ($response->failed() || is_null($json) || !$json['success']) {
+            if ($response->failed() || is_null($json) || !($json['success'] ?? false)) {
 
-                // Backend cũng trả message trực tiếp
                 $message = $json['message'] ?? 'REGISTER_FAILED';
+
+                if ($message === 'EMAIL_TAKEN') {
+                    $message = 'Email này đã được sử dụng.';
+                }
+
+                if ($message === 'MISSING_FIELDS') {
+                    $message = 'Thiếu thông tin đăng ký.';
+                }
 
                 return ['success' => false, 'message' => $message];
             }
@@ -70,7 +96,7 @@ class LoginService
 
         } catch (\Exception $e) {
             Log::error('Exception (register): ' . $e->getMessage());
-            return ['success' => false, 'message' => 'Lỗi hệ thống. Vui lòng thử lại.'];
+            return ['success' => false, 'message' => 'Lỗi kết nối đến máy chủ.'];
         }
     }
 }

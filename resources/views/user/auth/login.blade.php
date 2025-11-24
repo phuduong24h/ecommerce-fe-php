@@ -88,7 +88,7 @@
                     <div>
                         <label for="password_login" class="block text-sm font-medium mb-1">Mật khẩu</label>
                         <input type="password" id="password_login" name="password" required
-                               class="w-full px-4 py-3 bg-white/20 border border-transparent rounded-lg focus:ring-2 focus:ring-white/50 focus:outline-none text-white">
+                        class="w-full px-4 py-3 bg-white/20 border border-transparent rounded-lg focus:ring-2 focus:ring-white/50 focus:outline-none text-white">
                     </div>
 
                     <div class="flex items-center justify-between">
@@ -125,6 +125,12 @@
                         <label for="phone" class="block text-sm font-medium mb-1">Số điện thoại</label>
                         <input type="tel" id="phone" name="phone" value="{{ old('phone') }}" required
                                class="w-full px-4 py-3 bg-white/20 border border-transparent rounded-lg focus:ring-2 focus:ring-white/50 focus:outline-none text-white placeholder-white/70">
+                    </div>
+
+                    <div>
+                        <label for="address_reg" class="block text-sm font-medium mb-1">Địa chỉ</label>
+                        <input type="text" id="address_reg" name="address" value="{{ old('address') }}" required
+                        class="w-full px-4 py-3 bg-white/20 border border-transparent rounded-lg focus:ring-2 focus:ring-white/50 focus:outline-none text-white placeholder-white/70">
                     </div>
 
                     <div>
