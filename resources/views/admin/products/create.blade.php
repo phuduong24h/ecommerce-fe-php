@@ -12,7 +12,14 @@
         </div>
     @endif
 
-    {{-- Thông báo lỗi --}}
+    {{-- Thông báo lỗi từ Controller trả về (Quan trọng) --}}
+    @if(session('error'))
+        <div class="bg-red-100 text-red-700 p-3 rounded mb-4 text-sm">
+            {{ session('error') }}
+        </div>
+    @endif
+
+    {{-- Thông báo lỗi Validate --}}
     @if($errors->any())
         <div class="bg-red-100 text-red-700 p-3 rounded mb-4 text-sm">
             @foreach($errors->all() as $error)
@@ -63,26 +70,72 @@
 
         {{-- Hình ảnh --}}
         <div>
-            <label class="block text-sm font-medium text-gray-700">Hình ảnh (URL)</label>
-            <div id="image-list">
-                <input type="text" name="images[]" value="{{ old('images.0') }}" class="mt-1 block w-full border border-gray-300 rounded px-3 py-2 mb-2" placeholder="https://example.com/image.jpg" required>
+            <label class="block text-sm font-medium text-gray-700">Hình ảnh</label>
+            
+            <div id="image-list" class="space-y-2">
+                {{-- Input mặc định cho URL --}}
+                <div class="flex gap-2 items-center">
+                    <input type="text" name="images[]" value="{{ old('images.0') }}" 
+                           class="block w-full border border-gray-300 rounded px-3 py-2" 
+                           placeholder="https://example.com/image.jpg">
+                </div>
             </div>
-            <button type="button" id="addImageBtn" class="text-blue-500 text-sm">+ Thêm hình ảnh</button>
+
+            <div class="mt-2 flex gap-4">
+                <button type="button" id="addUrlBtn" class="text-blue-500 text-sm hover:underline">+ Thêm URL ảnh</button>
+                
+                {{-- Nút Upload file --}}
+                <label class="text-green-500 text-sm hover:underline cursor-pointer">
+                    + Upload ảnh từ máy
+                    <input type="file" id="fileUpload" class="hidden" accept="image/*">
+                </label>
+            </div>
+            @error('images') <p class="text-red-500 text-sm mt-1">{{ $message }}</p> @enderror
         </div>
 
-        {{-- Nút lưu --}}
         <button type="submit" class="bg-gradient-to-r from-purple-500 to-pink-500 text-white py-2 px-4 rounded hover:from-purple-600 hover:to-pink-600">
             Lưu sản phẩm
         </button>
     </form>
 </div>
 
-{{-- JS thêm input hình ảnh --}}
 <script>
-document.getElementById('addImageBtn').addEventListener('click', function() {
-    const div = document.createElement('div');
-    div.innerHTML = `<input type="text" name="images[]" class="mt-1 block w-full border border-gray-300 rounded px-3 py-2 mb-2" placeholder="https://example.com/image.jpg">`;
-    document.getElementById('image-list').appendChild(div);
-});
+    const imageList = document.getElementById('image-list');
+
+    // Thêm ô nhập URL
+    document.getElementById('addUrlBtn').addEventListener('click', function() {
+        const div = document.createElement('div');
+        div.className = 'flex gap-2 items-center';
+        div.innerHTML = `
+            <input type="text" name="images[]" class="block w-full border border-gray-300 rounded px-3 py-2" placeholder="https://example.com/image.jpg">
+            <button type="button" onclick="this.parentElement.remove()" class="text-red-500 text-sm">Xóa</button>
+        `;
+        imageList.appendChild(div);
+    });
+
+    // Xử lý upload file -> Base64 -> Input Hidden
+    document.getElementById('fileUpload').addEventListener('change', function(event) {
+        const file = event.target.files[0];
+        if (!file) return;
+
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            const base64String = e.target.result;
+            const div = document.createElement('div');
+            div.className = 'flex gap-2 items-center border p-2 rounded bg-gray-50';
+            
+            // Input hidden: chứa dữ liệu thật gửi đi
+            // Img: hiển thị preview
+            div.innerHTML = `
+                <img src="${base64String}" class="w-10 h-10 object-cover rounded border">
+                <input type="hidden" name="images[]" value="${base64String}"> 
+                <span class="text-sm text-gray-600 truncate flex-1 ml-2">Ảnh tải lên (Base64)</span>
+                <button type="button" onclick="this.parentElement.remove()" class="text-red-500 text-sm ml-auto">Xóa</button>
+            `;
+            imageList.appendChild(div);
+        };
+        reader.readAsDataURL(file);
+        event.target.value = ''; 
+    });
 </script>
 @endsection

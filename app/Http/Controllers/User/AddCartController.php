@@ -8,15 +8,16 @@ use App\Services\ApiClientService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
 
+//thắng
 class AddCartController extends Controller
 {
     protected $addCartService;
-    protected $api;
+    //protected $api;
 
     public function __construct(AddCartService $addCartService, ApiClientService $api)
     {
         $this->addCartService = $addCartService;
-        $this->api = $api;
+        //$this->api = $api;
     }
 
     public function add(Request $request)
@@ -44,7 +45,7 @@ class AddCartController extends Controller
 
         try {
             // 3. LẤY GIỎ HÀNG TỪ API (THAY VÌ SESSION)
-            $cartResponse = $this->api->get("cart");
+            $cartResponse = $this->addCartService->getCart();
             $cart = $cartResponse['data'] ?? [];
 
             // 🟢 TẠO ID DUY NHẤT CHO CART ITEM
