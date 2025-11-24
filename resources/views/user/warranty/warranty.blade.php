@@ -45,11 +45,12 @@
             @foreach($userSerials as $us)
               @if(!empty($us['serialCode']))
                 <option value="{{ $us['serialCode'] }}">
-                  {{ $us['serialCode'] }}
+                  {{ $us['productName'] ?? 'Sản phẩm' }} - {{ $us['serialCode'] }}
                 </option>
               @endif
             @endforeach
           </select>
+
 
           <button class="px-4 py-2 rounded-lg bg-gradient-to-r from-blue-400 to-teal-300 text-white font-semibold">
             <svg class="inline-block w-4 h-4 mr-2 -mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -103,7 +104,7 @@
 
                   <div class="text-sm text-gray-500">Số Serial: {{ $c['productSerial'] ?? 'Không có' }}</div>
                   <div class="text-sm text-gray-500">Claim ID: {{ $c['id'] ?? ($c['claimId'] ?? '-') }}</div>
-                  <p class="mt-2 text-gray-600">Vấn đề:  {!! nl2br(e($c['issueDesc'] ?? $c['description'] ?? '')) !!}</p>
+                  <p class="mt-2 text-gray-600">Vấn đề: {!! nl2br(e($c['issueDesc'] ?? $c['description'] ?? '')) !!}</p>
                 </div>
 
                 <div class="text-sm text-gray-400">

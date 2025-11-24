@@ -153,9 +153,11 @@ class WarrantyController extends Controller
      */
     public function submitClaim(Request $request)
     {
+        // Validate input
         $request->validate([
             "serial_number" => "required",
             "description" => "required|string",
+            "images.*" => "nullable|image|mimes:jpeg,png,jpg,gif|max:5120" // mỗi ảnh max 5MB
         ]);
 
         $serialCode = $request->serial_number;
@@ -168,12 +170,31 @@ class WarrantyController extends Controller
             return back()->withErrors(["msg" => "Serial không hợp lệ hoặc thiếu thông tin sản phẩm/đơn hàng"]);
         }
 
+        // ==== Kiểm tra status bảo hành ====
+        $statusResult = $this->serialServiceUser->checkSerialWarranty($serialCode);
+        $statusData = $statusResult['data'] ?? null;
+
+        if (!$statusData || ($statusData['status'] ?? '') === 'NO_WARRANTY') {
+            return back()->withErrors(["msg" => "Sản phẩm này không có bảo hành"]);
+        }
+
+        // Xử lý ảnh nếu có
+        $imagePaths = [];
+        if ($request->hasFile('images')) {
+            foreach ($request->file('images') as $image) {
+                $path = $image->store('warranty_images', 'public'); // lưu vào storage/app/public/warranty_images
+                $imagePaths[] = $path;
+            }
+        }
+
+        // Tạo payload
         $payload = [
             "productName" => $serial['productName'] ?? 'Sản phẩm',
             "productSerial" => $serial['serialCode'],
             "issueDesc" => $description,
             "productId" => $serial['productId'],
             "orderId" => $serial['orderId'],
+            "images" => $imagePaths // thêm trường images
         ];
 
         $result = $this->warrantyServiceUser->submitClaim($payload);
@@ -184,6 +205,7 @@ class WarrantyController extends Controller
 
         return back()->withErrors(["msg" => $result['message'] ?? "Lỗi khi gửi yêu cầu bảo hành"]);
     }
+
 
     /**
      * Trang tạo claim mới

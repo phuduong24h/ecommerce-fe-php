@@ -36,7 +36,7 @@ return [
     ],
     'api' => [
         // Base URL for the external Node.js API (or other backend). Set in .env as API_URL
-        'url' => env('API_URL', 'http://localhost:3000'),
+        'url' => env('API_URL', 'http://localhost:3002'),
         // Bearer token for API authentication. Set in .env as API_TOKEN
         'token' => env('API_TOKEN', ''),
         // Timeout (seconds) for HTTP client requests
