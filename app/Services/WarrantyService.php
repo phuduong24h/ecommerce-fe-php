@@ -14,7 +14,8 @@ class WarrantyService
     {
         // Đặt baseUrl đến /api/v1/admin/warranty để các request sau chỉ cần thêm /claims hoặc /claims/{id}
         $this->baseUrl = config('services.api.url') . '/api/v1/admin/warranty';
-        $this->token = config('services.api.token');
+        // $this->token = config('services.api.token');
+        $this->token = session('admin_token');
     }
 
     /**

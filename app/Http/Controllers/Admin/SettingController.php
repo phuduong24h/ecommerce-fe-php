@@ -283,7 +283,7 @@ class SettingController extends Controller
         $validated = $request->validate([
             'code' => 'required|string|max:50',
             'description' => 'nullable|string',
-            'discount' => 'required|numeric',
+            'discount' => 'required|numeric|min:0.01', // thêm validate cho discount
             'startDate' => 'required|date',
             'endDate' => 'required|date|after_or_equal:startDate',
             'isActive' => 'sometimes|boolean',
@@ -325,7 +325,7 @@ class SettingController extends Controller
         $validated = $request->validate([
             'code' => 'required|string|max:50',
             'description' => 'nullable|string',
-            'discount' => 'required|numeric', // thêm validate cho discount
+            'discount' => 'required|numeric|min:0.01', // thêm validate cho discount
             'startDate' => 'required|date',
             'endDate' => 'required|date|after_or_equal:startDate',
             'isActive' => 'sometimes|boolean',

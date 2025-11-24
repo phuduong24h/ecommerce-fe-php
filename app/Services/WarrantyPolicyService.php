@@ -13,7 +13,8 @@ class WarrantyPolicyService
     public function __construct()
     {
         $this->baseUrl = config('services.api.url') . '/api/v1/admin';
-        $this->token = config('services.api.token');
+        // $this->token = config('services.api.token');
+        $this->token = session('admin_token');
     }
 
     /**
@@ -90,5 +91,11 @@ class WarrantyPolicyService
             'requiresSerial' => isset($data['requiresSerial']) ? (bool) $data['requiresSerial'] : false,
         ];
     }
+    public function getById($id)
+{
+    $policies = $this->getAllPolicies();
+    return collect($policies)->firstWhere('id', $id) ?? null;
+}
+
 
 }

@@ -1,0 +1,207 @@
+@extends('layouts.admin')
+
+@section('title', 'Thêm Serial')
+
+@section('content')
+<div class="container mx-auto p-6 max-w-lg">
+
+    <!-- Header -->
+    <div class="mb-6">
+        <h1 class="text-2xl font-bold">Thêm Serial mới</h1>
+        <p class="text-gray-500 text-sm">Điền thông tin để tạo Serial mới</p>
+    </div>
+
+    <!-- Form -->
+    <form action="{{ route('admin.settings.serials.store') }}" method="POST" class="space-y-4 bg-white p-6 rounded-lg shadow">
+        @csrf
+
+        <!-- Serial -->
+        <div>
+            <label for="serial" class="block text-sm font-medium text-gray-700 mb-1">Serial Number <span class="text-red-500">*</span></label>
+            <input type="text" name="serial" id="serial" value="{{ old('serial') }}" required
+                   class="w-full border border-gray-300 rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-transparent">
+            @error('serial')
+                <p class="text-red-600 text-sm mt-1">{{ $message }}</p>
+            @enderror
+        </div>
+
+        <!-- Product ID -->
+        <div>
+            <label for="productId" class="block text-sm font-medium text-gray-700 mb-1">Product <span class="text-red-500">*</span></label>
+            <select name="productId" id="productId" required
+                    class="w-full border border-gray-300 rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-transparent">
+                @foreach($products as $product)
+                    <option value="{{ $product['id'] }}" {{ old('productId') == $product['id'] ? 'selected' : '' }}>
+                        {{ $product['name'] }}
+                    </option>
+                @endforeach
+            </select>
+            @error('productId')
+                <p class="text-red-600 text-sm mt-1">{{ $message }}</p>
+            @enderror
+        </div>
+
+        <!-- Status -->
+        <div>
+            <label for="status" class="block text-sm font-medium text-gray-700 mb-1">Trạng thái</label>
+            <select name="status" id="status"
+                    class="w-full border border-gray-300 rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-transparent">
+                <option value="available" {{ old('status') == 'available' ? 'selected' : '' }}>Available</option>
+                <option value="sold" {{ old('status') == 'sold' ? 'selected' : '' }}>Sold</option>
+                <option value="warranty" {{ old('status') == 'warranty' ? 'selected' : '' }}>Warranty Claimed</option>
+            </select>
+            @error('status')
+                <p class="text-red-600 text-sm mt-1">{{ $message }}</p>
+            @enderror
+</div>
+
+        <!-- Buttons -->
+        <div class="flex justify-end gap-2">
+            <a href="{{ route('admin.settings.index', ['tab' => 'serials']) }}" 
+               class="px-4 py-2 rounded bg-gray-200 text-gray-700 hover:bg-gray-300">Hủy</a>
+            <button type="submit" 
+                    class="px-4 py-2 rounded bg-cyan-500 text-white hover:bg-cyan-600">Tạo Serial</button>
+        </div>
+    </form>
+</div>
+@endsection
+<template x-if="$store.tab === 'serials'">
+    <div x-transition class="space-y-4">
+
+        <!-- Header: Search + Filter -->
+        <div class="flex flex-col md:flex-row md:items-center gap-4 mb-4">
+            <!-- Search serial + sản phẩm -->
+            <div class="relative flex-1">
+                <input type="text" id="searchSerials" placeholder="Tìm kiếm theo serial hoặc sản phẩm..."
+                       class="pl-3 w-full border border-gray-300 rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-cyan-500 transition">
+            </div>
+
+            <!-- Filter trạng thái -->
+            <select id="statusFilterSerials" class="border border-gray-300 rounded px-3 py-2 w-[180px]">
+                <option value="all">Tất cả trạng thái</option>
+                <option value="available">Còn hàng</option>
+                <option value="sold">Đã bán</option>
+                <option value="warranty_claimed">Đã bảo hành</option>
+            </select>
+        </div>
+
+        <!-- Table -->
+        <div class="rounded-lg border bg-card text-card-foreground shadow-sm overflow-hidden">
+            <table class="w-full">
+                <thead class="border-b bg-muted/50">
+                    <tr>
+                        <th class="h-12 px-4 text-left align-middle font-medium text-muted-foreground text-xs uppercase tracking-wider">Số serial</th>
+                        <th class="h-12 px-4 text-left align-middle font-medium text-muted-foreground text-xs uppercase tracking-wider">Sản phẩm</th>
+                        <th class="h-12 px-4 text-left align-middle font-medium text-muted-foreground text-xs uppercase tracking-wider">Trạng thái</th>
+                        <th class="h-12 px-4 text-left align-middle font-medium text-muted-foreground text-xs uppercase tracking-wider">Hành động</th>
+                    </tr>
+                </thead>
+                <tbody id="serialsTable" class="divide-y">
+                    @forelse($serials as $serial)
+                        @php
+                            $statusClass = $serial['status'] === 'available'
+                                ? 'bg-emerald-100 text-emerald-700'
+                                : ($serial['status'] === 'sold'
+                                    ? 'bg-blue-100 text-blue-700'
+                                    : 'bg-amber-100 text-amber-700');
+
+                            $statusText = $serial['status'] === 'available'
+                                ? 'Còn hàng'
+                                : ($serial['status'] === 'sold'
+                                    ? 'Đã bán'
+                                    : 'Đã bảo hành');
+                        @endphp
+                        <tr class="hover:bg-muted/50 transition-colors">
+                            <td class="p-4 align-middle"><span class="font-mono text-sm">{{ $serial['serial'] }}</span></td>
+                            <td class="p-4 align-middle">{{ $serial['productName'] }}</td>
+                            <td class="p-4 align-middle">
+                                <span class="inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium {{ $statusClass }}">
+                                    {{ $statusText }}
+                                </span>
+                            </td>
+                            <td class="p-4 align-middle">
+                                <div class="flex gap-2">
+                                    <a href="{{ route('admin.settings.serials.edit', $serial['id']) }}" 
+                                       class="h-8 w-8 rounded-md text-blue-600 hover:bg-blue-50 flex items-center justify-center">
+                                        <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                                  d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/>
+                                        </svg>
+                                    </a>
+                                    <form action="{{ route('admin.settings.serials.destroy', $serial['id']) }}" method="POST" onsubmit="return confirm('Bạn có chắc chắn muốn xóa serial này không?')">
+                                        @csrf
+                                        @method('DELETE')
+                                        <button type="submit"
+                                                class="h-8 w-8 rounded-md text-red-600 hover:bg-red-50 flex items-center justify-center">
+                                            <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                                      d="M19 7l-.867 12.142A2.5 2.5 0 0116.138 21H7.862a2.5 2.5 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
+                                            </svg>
+                                        </button>
+                                    </form>
+                                </div>
+                            </td>
+                        </tr>
+                    @empty
+                        <tr>
+                            <td colspan="4" class="text-center text-gray-500 py-8">Chưa có serial</td>
+                        </tr>
+                    @endforelse
+                </tbody>
+            </table>
+
+            <!-- Pagination giữ tab -->
+            <div class="mt-6">
+                {{ $serials->appends([
+                    'activeTab' => 'serials',
+                    'page_categories' => request()->get('page_categories'),
+                    'page_promotions' => request()->get('page_promotions'),
+                    'page_centers' => request()->get('page_centers'),
+                ])->links() }}
+            </div>
+        </div>
+    </div>
+
+    @push('scripts')
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const searchInput = document.getElementById('searchSerials');
+            const statusFilter = document.getElementById('statusFilterSerials');
+            const tableRows = document.querySelectorAll('#serialsTable tr');
+
+            function filterTable() {
+                const term = searchInput.value.toLowerCase();
+                const filter = statusFilter.value;
+
+                tableRows.forEach(row => {
+                    const serial = row.cells[0]?.innerText.toLowerCase() || '';
+                    const productName = row.cells[1]?.innerText.toLowerCase() || '';
+                    const statusText = row.cells[2]?.innerText.toLowerCase() || '';
+
+                    const matchesSearch = serial.includes(term) || productName.includes(term);
+                    const matchesFilter = filter === 'all' || statusText.includes(filter.replace('_', ' '));
+
+                    row.style.display = (matchesSearch && matchesFilter) ? '' : 'none';
+                });
+            }
+
+            searchInput.addEventListener('input', filterTable);
+            statusFilter.addEventListener('change', filterTable);
+        });
+    </script>
+    @endpush
+</template>
+
+
+
+
+        <!-- Header: Add Serial button -->
+        <div class="flex justify-end">
+            <a href="{{ route('admin.settings.serials.create') }}"
+               class="inline-flex items-center justify-center rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 h-10 px-4 py-2 bg-gradient-to-r from-cyan-500 to-blue-500 hover:from-cyan-600 hover:to-blue-600 text-white">
+                <svg class="mr-2 h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
+                </svg>
+                Add Serial
+            </a>
+        </div>

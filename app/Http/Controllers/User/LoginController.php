@@ -7,6 +7,8 @@ use App\Services\LoginService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Validator;
 
+
+// Thắng
 class LoginController extends Controller
 {
     protected $loginService;

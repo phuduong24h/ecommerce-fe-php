@@ -7,7 +7,7 @@
     <!-- Header -->
     <div class="flex justify-between items-center mb-6">
         <h1 class="text-2xl font-bold">Sản phẩm</h1>
-        <!-- Nút dẫn tới trang create -->
+        <!-- Nút dẫn tới trang tạo mới -->
         <a href="{{ route('admin.products.create') }}" 
            class="bg-gradient-to-r from-cyan-500 to-blue-500 text-white px-4 py-2 rounded hover:from-cyan-600 hover:to-blue-600 flex items-center gap-2">
             <span>+</span> Thêm sản phẩm
@@ -37,12 +37,12 @@
         <table class="min-w-full table-auto" id="productsTable">
             <thead class="bg-gray-50">
                 <tr>
-                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Product</th>
-                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Category</th>
-                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Price</th>
-                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Stock</th>
-                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Status</th>
-                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Actions</th>
+                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Sản phẩm</th>
+                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Danh mục</th>
+                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Giá</th>
+                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Số lượng</th>
+                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Trạng thái</th>
+                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Hành động</th>
                 </tr>
             </thead>
             <tbody class="bg-white divide-y divide-gray-200">
@@ -57,19 +57,19 @@
                     <td class="px-6 py-4 text-sm">{{ $p['stock'] }}</td>
                     <td class="px-6 py-4 text-sm">
                         @if($p['stock'] > 30)
-                            <span class="px-2 py-1 rounded bg-emerald-100 text-emerald-700 text-xs font-medium">In Stock</span>
+                            <span class="px-2 py-1 rounded bg-emerald-100 text-emerald-700 text-xs font-medium">Còn hàng</span>
                         @elseif($p['stock'] > 10)
-                            <span class="px-2 py-1 rounded bg-amber-100 text-amber-700 text-xs font-medium">Low Stock</span>
+                            <span class="px-2 py-1 rounded bg-amber-100 text-amber-700 text-xs font-medium">Hàng ít</span>
                         @else
-                            <span class="px-2 py-1 rounded bg-red-100 text-red-700 text-xs font-medium">Critical</span>
+                            <span class="px-2 py-1 rounded bg-red-100 text-red-700 text-xs font-medium">Hàng sắp hết</span>
                         @endif
                     </td>
                     <td class="px-6 py-4 text-sm flex gap-2">
-                        <a href="{{ route('admin.products.edit', $p['id']) }}" class="text-blue-600 hover:underline font-medium">Edit</a>
+                        <a href="{{ route('admin.products.edit', $p['id']) }}" class="text-blue-600 hover:underline font-medium">Sửa</a>
                         <form action="{{ route('admin.products.destroy', $p['id']) }}" method="POST" onsubmit="return confirmDelete()">
                             @csrf
                             @method('DELETE')
-                            <button type="submit" class="text-red-600 hover:underline font-medium">Delete</button>
+                            <button type="submit" class="text-red-600 hover:underline font-medium">Xóa</button>
                         </form>
                     </td>
                 </tr>
@@ -81,16 +81,14 @@
             </tbody>
         </table>
         <div class="mt-4">
-    {{ $products->links() }}
-
-</div>
-
+            {{ $products->links() }}
+        </div>
     </div>
 </div>
 
 @push('scripts')
 <script>
-    // Search đa cột (Product, Category, Price, Stock, Status)
+    // Tìm kiếm đa cột (Sản phẩm, Danh mục, Giá, Số lượng, Trạng thái)
     document.getElementById('searchInput').addEventListener('input', () => {
         const term = document.getElementById('searchInput').value.toLowerCase();
         document.querySelectorAll('#productsTable tbody tr').forEach(row => {
@@ -113,4 +111,4 @@
     }
 </script>
 @endpush
-@endsection  
+@endsection

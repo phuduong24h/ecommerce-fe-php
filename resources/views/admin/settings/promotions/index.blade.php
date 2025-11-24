@@ -1,13 +1,26 @@
 <div x-transition class="space-y-4">
 
-    <!-- Header: Add Promotion button -->
-    <div class="flex justify-end">
+    <!-- Header: Search + Add Promotion -->
+    <div class="flex justify-between items-center mb-4">
+        <div class="relative w-1/2 flex gap-2">
+            <!-- Search by code -->
+            <input type="text" id="searchPromo" placeholder="Tìm kiếm mã khuyến mãi..."
+                   class="pl-10 w-full border border-gray-300 rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-transparent transition">
+
+            <!-- Filter by status -->
+            <select id="filterStatus" class="border border-gray-300 rounded px-3 py-2">
+                <option value="all">Tất cả trạng thái</option>
+                <option value="active">Active</option>
+                <option value="inactive">Inactive</option>
+            </select>
+        </div>
+
         <a href="{{ route('admin.settings.promotions.create') }}"
-           class="inline-flex items-center justify-center rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 h-10 px-4 py-2 bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white">
+           class="inline-flex items-center justify-center rounded-md text-sm font-medium h-10 px-4 py-2 bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white">
             <svg class="mr-2 h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
             </svg>
-            Add Promotion
+            Thêm Khuyến Mãi
         </a>
     </div>
 
@@ -16,10 +29,10 @@
         <table class="w-full">
             <thead class="border-b bg-muted/50">
                 <tr>
-                    <th class="h-12 px-4 text-left align-middle font-medium text-muted-foreground text-xs uppercase tracking-wider">Promotion Code</th>
-                    <th class="h-12 px-4 text-left align-middle font-medium text-muted-foreground text-xs uppercase tracking-wider">Discount</th>
-                    <th class="h-12 px-4 text-left align-middle font-medium text-muted-foreground text-xs uppercase tracking-wider">Status</th>
-                    <th class="h-12 px-4 text-left align-middle font-medium text-muted-foreground text-xs uppercase tracking-wider">Actions</th>
+                    <th class="h-12 px-4 text-left align-middle font-medium text-muted-foreground text-xs uppercase tracking-wider">Mã khuyến mãi</th>
+                    <th class="h-12 px-4 text-left align-middle font-medium text-muted-foreground text-xs uppercase tracking-wider">Chiết khấu</th>
+                    <th class="h-12 px-4 text-left align-middle font-medium text-muted-foreground text-xs uppercase tracking-wider">Trạng thái</th>
+                    <th class="h-12 px-4 text-left align-middle font-medium text-muted-foreground text-xs uppercase tracking-wider">Hành động</th>
                 </tr>
             </thead>
             <tbody class="divide-y">
@@ -85,3 +98,29 @@
     </div>
 
 </div>
+
+@push('scripts')
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+    const searchInput = document.getElementById('searchPromo');
+    const statusFilter = document.getElementById('filterStatus');
+
+    function filterPromotions() {
+        const term = searchInput.value.toLowerCase();
+        const status = statusFilter.value; // all, active, inactive
+        document.querySelectorAll('tbody tr').forEach(row => {
+            const code = row.querySelector('td:nth-child(1) span')?.innerText.toLowerCase() || '';
+            const isActive = row.querySelector('td:nth-child(3) span')?.innerText.toLowerCase() === 'active';
+
+            const matchesSearch = code.includes(term);
+            const matchesStatus = status === 'all' || (status === 'active' && isActive) || (status === 'inactive' && !isActive);
+
+            row.style.display = (matchesSearch && matchesStatus) ? '' : 'none';
+        });
+    }
+
+    searchInput.addEventListener('input', filterPromotions);
+    statusFilter.addEventListener('change', filterPromotions);
+});
+</script>
+@endpush

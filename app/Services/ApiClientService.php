@@ -18,7 +18,10 @@ class ApiClientService
 
     public function __construct()
     {
-        $this->baseUrl = rtrim(config('services.api.url', env('API_URL', '')), '/');
+        // SỬA: Nối thêm '/api/v1' vào cuối
+        $rootUrl = rtrim(config('services.api.url', env('API_URL', '')), '/');
+        $this->baseUrl = $rootUrl . '/api/v1';
+        
         $this->token = config('services.api.token', env('API_TOKEN')) ?: null;
     }
 
