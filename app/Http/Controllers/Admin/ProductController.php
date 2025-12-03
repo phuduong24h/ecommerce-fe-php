@@ -9,6 +9,7 @@ use App\Services\WarrantyPolicyService; // Từ File 2
 use App\Services\ProductSerialService;  // Từ File 2
 use Illuminate\Http\Request;
 use Illuminate\Pagination\LengthAwarePaginator;
+use App\Services\PromotionService;
 
 class ProductController extends Controller
 {
@@ -17,16 +18,20 @@ class ProductController extends Controller
     protected $warrantyPolicyService; // Từ File 2
     protected $productSerialService;  // Từ File 2
 
+    protected $promotionService;
+
     public function __construct(
         ProductService $productService,
         CategoryService $categoryService,
         WarrantyPolicyService $warrantyPolicyService,
-        ProductSerialService $productSerialService
+        ProductSerialService $productSerialService,
+        PromotionService $promotionService
     ) {
         $this->productService = $productService;
         $this->categoryService = $categoryService;
         $this->warrantyPolicyService = $warrantyPolicyService;
         $this->productSerialService = $productSerialService;
+        $this->promotionService = $promotionService;
     }
 
     /**
@@ -64,8 +69,9 @@ class ProductController extends Controller
         $categories = $this->categoryService->getAllCategories();
         // Gộp: Thêm policies từ File 2
         $policies = $this->warrantyPolicyService->getAllPolicies();
+         $promotions = $this->promotionService->getAllPromotions(); // giả sử bạn có service PromotionService
 
-        return view('admin.products.create', compact('categories', 'policies'));
+        return view('admin.products.create', compact('categories', 'policies', 'promotions'));
     }
 
     /**
@@ -94,6 +100,8 @@ class ProductController extends Controller
             'variants.*.value' => 'nullable|string|min:1',
             'variants.*.price' => 'nullable|numeric|min:0',
             'variants.*.stock' => 'nullable|integer|min:0',
+            'promotionId' => 'nullable|string',
+
         ]);
 
         // Xử lý ảnh (Logic gộp: Ưu tiên lọc rỗng của File 1 + fallback của File 2)
@@ -138,12 +146,13 @@ class ProductController extends Controller
         $categories = $this->categoryService->getAllCategories();
         // Gộp: Thêm policies từ File 2
         $policies = $this->warrantyPolicyService->getAllPolicies();
+        $promotions = $this->promotionService->getAllPromotions(); 
 
         if (!$product) {
             return redirect()->route('admin.products.index')->with('error', 'Sản phẩm không tồn tại');
         }
 
-        return view('admin.products.edit', compact('product', 'categories', 'policies'));
+        return view('admin.products.edit', compact('product', 'categories', 'policies', 'promotions'));
     }
 
     /**
@@ -172,6 +181,7 @@ class ProductController extends Controller
             'variants.*.value' => 'nullable|string|min:1',
             'variants.*.price' => 'nullable|numeric|min:0',
             'variants.*.stock' => 'nullable|integer|min:0',
+            'promotionId' => 'nullable|string',
         ]);
 
         // Xử lý images (Kết hợp logic lọc và fallback)

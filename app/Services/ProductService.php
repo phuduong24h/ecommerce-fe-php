@@ -125,7 +125,13 @@ class ProductService
                     'stock' => isset($v['stock']) ? max(0, (int) $v['stock']) : 0,
                 ];
             }, $filteredVariants);
+
         }
+        // Map promotionId ra ngoài để luôn gửi
+        if (!empty($data['promotionId'])) {
+            $payload['promotionId'] = $data['promotionId'];
+        }
+
 
 
         return $payload;

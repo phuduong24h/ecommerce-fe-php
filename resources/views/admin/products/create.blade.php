@@ -90,6 +90,19 @@
                         @endforeach
                     </select>
                 </div>
+                    {{-- Mã giảm giá --}}
+                <div>
+                    <label class="block text-sm font-medium text-gray-700">Mã giảm giá</label>
+                    <select name="promotionId" class="mt-1 w-full border border-gray-300 rounded px-3 py-2">
+                        <option value="">-- Chọn mã giảm giá --</option>
+                        @foreach($promotions as $promotion)
+                            <option value="{{ $promotion['id'] }}"
+                                {{ old('promotionId', $product['promotionId'] ?? '') === $promotion['id'] ? 'selected' : '' }}>
+                                {{ $promotion['code'] }} ({{ $promotion['discount'] ?? 0 }}%)
+                            </option>
+                        @endforeach
+                    </select>
+                </div>
 
                 {{-- Chính sách bảo hành (File 2) --}}
                 <div>
