@@ -45,11 +45,12 @@
             @foreach($userSerials as $us)
               @if(!empty($us['serialCode']))
                 <option value="{{ $us['serialCode'] }}">
-                  {{ $us['serialCode'] }}
+                  {{ $us['productName'] ?? 'Sản phẩm' }} - {{ $us['serialCode'] }}
                 </option>
               @endif
             @endforeach
           </select>
+
 
           <button class="px-4 py-2 rounded-lg bg-gradient-to-r from-blue-400 to-teal-300 text-white font-semibold">
             <svg class="inline-block w-4 h-4 mr-2 -mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -103,7 +104,7 @@
 
                   <div class="text-sm text-gray-500">Số Serial: {{ $c['productSerial'] ?? 'Không có' }}</div>
                   <div class="text-sm text-gray-500">Claim ID: {{ $c['id'] ?? ($c['claimId'] ?? '-') }}</div>
-                  <p class="mt-2 text-gray-600">Vấn đề:  {!! nl2br(e($c['issueDesc'] ?? $c['description'] ?? '')) !!}</p>
+                  <p class="mt-2 text-gray-600">Vấn đề: {!! nl2br(e($c['issueDesc'] ?? $c['description'] ?? '')) !!}</p>
                 </div>
 
                 <div class="text-sm text-gray-400">
@@ -165,6 +166,22 @@
             <textarea name="description" rows="4" placeholder="Mô tả vấn đề sản phẩm..."
               class="w-full px-4 py-3 rounded-lg bg-gray-100 border border-transparent focus:outline-none focus:ring-2 focus:ring-pink-200"></textarea>
           </div>
+          <div class="mt-4">
+
+            <div id="claimImageList" class="space-y-2">
+              <div class="flex gap-2 items-center">
+                <!-- <input name="images[]" class="w-full border rounded p-2"> -->
+              </div>
+            </div>  
+
+            <div class="mt-2 flex gap-4 items-center">
+              <label class="text-green-600 text-sm hover:underline cursor-pointer font-medium flex items-center gap-1">
+                <span>+ Upload ảnh từ máy</span>
+                <input type="file" id="claimFileUpload" class="hidden" accept="image/*" multiple>
+              </label>
+            </div>
+          </div>
+
 
           <div class="bg-yellow-50 border border-yellow-100 p-3 rounded-md text-sm text-yellow-800">
             Vui lòng đảm bảo serial sản phẩm chính xác. Thời gian xử lý yêu cầu thường 3-5 ngày làm việc.
@@ -258,6 +275,34 @@
         confirmButtonText: 'OK'
       });
     @endif
+        const claimImageList = document.getElementById('claimImageList');
+    const claimFileUpload = document.getElementById('claimFileUpload');
+
+    claimFileUpload.addEventListener('change', function (event) {
+      const files = Array.from(event.target.files);
+
+      files.forEach(file => {
+        const reader = new FileReader();
+        reader.onload = function (e) {
+          const base64String = e.target.result;
+
+          const div = document.createElement('div');
+          div.className = 'relative w-24 h-24 border rounded overflow-hidden';
+
+          div.innerHTML = `
+            <img src="${base64String}" class="w-full h-full object-cover">
+            <button type="button" class="absolute top-0 right-0 bg-red-500 text-white text-xs px-1.5 py-0.5 rounded-bl" onclick="this.parentElement.remove()">X</button>
+            <input type="hidden" name="images[]" value="${base64String}">
+          `;
+
+          claimImageList.appendChild(div);
+        };
+        reader.readAsDataURL(file);
+      });
+
+      event.target.value = ''; // Reset input để có thể chọn lại file cùng tên
+    });
+
   </script>
 
 @endsection

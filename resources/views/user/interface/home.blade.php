@@ -39,21 +39,6 @@
                     <i class="header__search-input-icon fa-solid fa-magnifying-glass"></i>
                     <input type="text" class="header__search-input" placeholder="Tìm kiếm sản phẩm..." name="search" value="{{ $searchTerm ?? '' }}">
                 </div>
-                <div class="header__search-select">
-                    <span class="header__search-select-label">{{ $currentCategoryName ?? 'Tất cả danh mục' }}</span>
-                    <i class="header__search-select-icon fa-solid fa-angle-down"></i>
-                    <ul class="header__search-option">
-                        <li class="header__search-option-item" data-value=""><span>Tất cả danh mục</span></li>
-                        @if(isset($categories) && count($categories) > 0)
-                            @foreach($categories as $cat)
-                                <li class="header__search-option-item" data-value="{{ $cat['id'] }}"><span>{{ $cat['name'] }}</span></li>
-                            @endforeach
-                        @endif
-                    </ul>
-                </div>
-                <button type="submit" class="header__search-btn btn_css btn--primary_css" style="width: 60px; height: 34px; display: flex; align-items: center; justify-content: center;">
-                    <i class="header__search-btn-icon fa-solid fa-magnifying-glass" style="color: white;"></i>
-                </button>
             </form>
 
             {{-- LIST SẢN PHẨM --}}
@@ -196,19 +181,4 @@
         </div>
     </div>
 </div>
-
-<script>
-    document.addEventListener('DOMContentLoaded', function () {
-        const hiddenInput = document.getElementById('search-category-input');
-        const searchForm = document.getElementById('search-form');
-        const items = document.querySelectorAll('.header__search-option-item');
-        items.forEach(item => {
-            item.addEventListener('click', function (e) {
-                const value = this.getAttribute('data-value');
-                if(hiddenInput) hiddenInput.value = value;
-                if(searchForm) searchForm.submit();
-            });
-        });
-    });
-</script>
 @endsection

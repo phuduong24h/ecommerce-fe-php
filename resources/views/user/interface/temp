@@ -1,0 +1,193 @@
+@extends('layouts.app')
+
+@section('content')
+
+<div class="grid">
+    <div class="grid__row app__content">
+        <div class="grid__column-12">
+
+            {{-- BANNER --}}
+            <div class="app__banner">
+                <p class="app__banner-heading">Chào Mừng Đến Cửa Hàng</p>
+                <p class="app__banner-text">Khám phá các sản phẩm công nghệ cao cấp với bảo hành đầy đủ</p>
+                <p class="app__banner-promo">Miễn phí vận chuyển cho đơn hàng trên $50</p>
+            </div>
+
+            {{-- SEARCH BAR --}}
+            <form class="app__search-container" action="{{ route('home') }}" method="GET">
+                <div class="header__search-input-wrap">
+                    <i class="header__search-input-icon fa-solid fa-magnifying-glass"></i>
+                    <input type="text"
+                           class="header__search-input"
+                           placeholder="Tìm kiếm sản phẩm..."
+                           name="search"
+                           value="{{ $searchTerm ?? '' }}">
+                </div>
+                <div class="header__search-select">
+                    <span class="header__search-select-label">Tất cả danh mục</span>
+                    <i class="header__search-select-icon fa-solid fa-angle-down"></i>
+                </div>
+                <button type="submit" style="display: none;"></button>
+            </form>
+
+            {{-- DANH MỤC THEO PHÂN TRANG --}}
+            @if(empty($productsByCategory))
+                <div class="text-center p-5">
+                    <h3 class="text-gray-500">Không tìm thấy sản phẩm nào.</h3>
+                </div>
+            @else
+                @foreach($categoriesToShow as $categoryName)
+                    @php
+                        $productsToShow = $productsToShowByCategory[$categoryName] ?? [];
+                        $totalProductPages = ceil(count($productsByCategory[$categoryName] ?? []) / $productsPerPage);
+                        $currentProductPage = $currentProductPages[$categoryName] ?? 1;
+                    @endphp
+
+                    <div class="category-section mb-8">
+                        <h2 class="text-2xl font-bold text-gray-800 mb-4">{{ $categoryName }}</h2>
+
+                        <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                            @foreach($productsToShow as $product)
+                                @php
+                                    $imageUrl = $product['images'][0] ?? $product['image'] ?? $product['HinhAnh'] ?? 'https://via.placeholder.com/300?text=No+Image';
+                                    $prodId = $product['id'] ?? $product['_id'] ?? 0;
+                                    $displayPrice = $product['price'] ?? 0;
+                                    if(!empty($product['selected_variant']['price'])) {
+                                        $displayPrice += $product['selected_variant']['price'];
+                                    }
+                                @endphp
+
+                                <div class="home-product-item border rounded-lg p-4">
+                                    <a href="{{ route('product.detail', ['id' => $prodId]) }}">
+                                        <div class="w-full h-48 bg-gray-100 mb-4"
+                                             style="background-image: url('{{ $imageUrl }}'); background-size: cover; background-position: center;">
+                                        </div>
+                                        <h4 class="font-semibold mb-2">{{ $product['name'] }}</h4>
+                                    </a>
+
+                                    <p class="text-cyan-600 font-bold mb-1">${{ number_format($displayPrice, 2) }}</p>
+                                    <span class="text-sm {{ ($product['stock'] ?? 0) > 0 ? 'text-green-600' : 'text-red-600' }}">
+                                        {{ ($product['stock'] ?? 0) > 0 ? 'Còn Hàng' : 'Hết Hàng' }}
+                                    </span>
+
+                                    <button class="mt-2 w-full bg-blue-500 text-white py-2 rounded add-to-cart-btn"
+                                            data-product-json="{{ json_encode($product) }}"
+                                            {{ ($product['stock'] ?? 0) == 0 ? 'disabled' : '' }}>
+                                        <i class="fas fa-shopping-cart mr-1"></i> Thêm vào Giỏ
+                                    </button>
+                                </div>
+                            @endforeach
+                        </div>
+
+                        {{-- PHÂN TRANG SẢN PHẨM TRONG DANH MỤC --}}
+                        @if($totalProductPages > 1)
+                            <div class="category-pagination mt-4">
+                                @for($i = 1; $i <= $totalProductPages; $i++)
+                                    <a href="{{ route('home', array_merge(request()->all(), ['productPage_'.urlencode($categoryName) => $i])) }}"
+                                       class="px-3 py-1 border rounded {{ $i == $currentProductPage ? 'bg-blue-500 text-white' : '' }}">
+                                        {{ $i }}
+                                    </a>
+                                @endfor
+                            </div>
+                        @endif
+                    </div>
+                @endforeach
+
+                {{-- PHÂN TRANG DANH MỤC --}}
+                @if($totalCategoryPages > 1)
+                    <div class="pagination mt-8">
+                        <ul class="pagination-list">
+                            @if($currentCategoryPage > 1)
+                                <li class="pagination-item">
+                                    <a href="{{ route('home', array_merge(request()->all(), ['categoryPage' => $currentCategoryPage - 1])) }}"
+                                       class="pagination-link">
+                                        <i class="fa-solid fa-angle-left"></i>
+                                    </a>
+                                </li>
+                            @endif
+
+                            @for($i = 1; $i <= $totalCategoryPages; $i++)
+                                <li class="pagination-item {{ $i == $currentCategoryPage ? 'pagination-item--active' : '' }}">
+                                    <a href="{{ route('home', array_merge(request()->all(), ['categoryPage' => $i])) }}"
+                                       class="pagination-link">{{ $i }}</a>
+                                </li>
+                            @endfor
+
+                            @if($currentCategoryPage < $totalCategoryPages)
+                                <li class="pagination-item">
+                                    <a href="{{ route('home', array_merge(request()->all(), ['categoryPage' => $currentCategoryPage + 1])) }}"
+                                       class="pagination-link">
+                                        <i class="fa-solid fa-angle-right"></i>
+                                    </a>
+                                </li>
+                            @endif
+                        </ul>
+                    </div>
+                @endif
+            @endif
+
+            {{-- CSS Phân trang --}}
+            <style>
+                .pagination {
+                    display: flex;
+                    justify-content: center;
+                    margin: 40px 0 20px 0;
+                }
+                .pagination-list {
+                    display: flex;
+                    list-style: none;
+                    padding: 0;
+                    gap: 8px;
+                }
+                .pagination-link {
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    min-width: 40px;
+                    height: 40px;
+                    text-decoration: none;
+                    font-size: 1.4rem;
+                    color: #999;
+                    border-radius: 4px;
+                    background-color: #fff;
+                    border: 1px solid #eee;
+                    transition: all 0.2s ease;
+                }
+                .pagination-link:hover {
+                    background-color: #fafafa;
+                    color: #0891b2;
+                    border-color: #0891b2;
+                }
+                .pagination-item--active .pagination-link {
+                    background-color: #0891b2;
+                    color: white;
+                    border-color: #0891b2;
+                }
+                .pagination-item--active .pagination-link:hover {
+                    background-color: #0e7490;
+                }
+                .category-pagination {
+                    display: flex;
+                    justify-content: center;
+                    gap: 6px;
+                    margin-top: 10px;
+                }
+                .category-pagination a {
+                    padding: 4px 10px;
+                    border: 1px solid #eee;
+                    border-radius: 4px;
+                    color: #333;
+                    text-decoration: none;
+                }
+                .category-pagination a.bg-blue-500 {
+                    background-color: #0891b2;
+                    color: white;
+                    border-color: #0891b2;
+                }
+            </style>
+
+        </div>
+    </div>
+</div>
+
+@endsection

@@ -18,6 +18,7 @@ use App\Http\Middleware\AdminAuth;
 
 use App\Http\Controllers\User\LoginController;
 use App\Http\Controllers\User\InterfaceController;
+use App\Http\Controllers\User\CategoryController;
 use App\Http\Controllers\User\AddCartController; // <-- THÊM DÒNG NÀY
 
 use App\Http\Controllers\User\ProductDetailController;
@@ -29,10 +30,11 @@ use App\Http\Controllers\User\WarrantyController; //bao hanh cua hải
 // 1. ROUTE TRANG CHỦ (GIAO DIỆN CHÍNH)
 // ========================================
 Route::get('/', [InterfaceController::class, 'index'])->name('home');
+Route::get('/category/{id}', [CategoryController::class, 'show'])->name('category.show');
 // ***********************************************
 
 // ========================================
-// 1. ADMIN ROUTES (GIAO DIỆN)
+// 1. ADMIN ROUTES (GIAO DIỆN)product
 // ========================================
 Route::prefix('admin')->name('admin.')->middleware([AdminAuth::class])->group(function () {
     Route::get('/logout', [AuthController::class, 'logout'])->name('logout');
