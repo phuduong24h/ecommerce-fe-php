@@ -101,13 +101,47 @@ class InterfaceService
     public function getCategories()
     {
         try {
-            $response = $this->getHttp()->get("{$this->baseUrl}/categories");
+            // Lấy 100 sản phẩm mới nhất để quét danh mục
+            $response = $this->getHttp()->get("{$this->baseUrl}/products", [
+                'page' => 1,
+                'pageSize' => 100
+            ]);
 
-            if ($response->failed()) return ['success' => false, 'data' => []];
+            if ($response->failed()) {
+                return ['success' => false, 'data' => []];
+            }
 
             $json = $response->json();
-            return ['success' => true, 'data' => $json['data'] ?? []];
+            $products = $json['data']['products'] ?? [];
+
+            $categories = [];
+            $seenIds = []; // Đổi sang check trùng theo ID để đảm bảo tính duy nhất
+
+            foreach ($products as $p) {
+                $catName = $p['categoryName'] ?? null;
+                $catId = $p['categoryId'] ?? null;
+
+                // 🛑 CHỈ LẤY NẾU CÓ CẢ ID VÀ TÊN
+                // Nếu không có catId, Backend sẽ không lọc được -> Bỏ qua
+                if ($catName && $catId && !in_array($catId, $seenIds)) {
+                    $seenIds[] = $catId;
+
+                    $categories[] = [
+                        'id' => $catId,
+                        'name' => $catName
+                    ];
+                }
+            }
+
+            // Sắp xếp A-Z
+            usort($categories, function($a, $b) {
+                return strcmp($a['name'], $b['name']);
+            });
+
+            return ['success' => true, 'data' => $categories];
+
         } catch (\Exception $e) {
+            Log::error('Error extracting categories: ' . $e->getMessage());
             return ['success' => false, 'data' => []];
         }
     }

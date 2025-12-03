@@ -1,44 +1,46 @@
+// public/js/AddCart.js
 import './bootstrap';
 
 document.addEventListener('DOMContentLoaded', () => {
+
+    // Kiểm tra biến global từ Laravel (được define ở layout chính)
+    if(!window.myApp) return; 
 
     const { cartAddUrl, isLoggedIn, loginUrl } = window.myApp;
     const cartCountBadge = document.getElementById('cart-count'); 
     const allAddToCartButtons = document.querySelectorAll('.add-to-cart-btn');
 
-    // --- ĐÂY LÀ HÀM CẦN SỬA ---
+    // Hàm cập nhật Badge Icon trên Header
     function updateCartIconCount(newCount) {
         if (!cartCountBadge) return;
 
-        // 1. Cập nhật nội dung số
         cartCountBadge.textContent = newCount;
 
-        // 2. LOGIC QUAN TRỌNG: Ẩn/Hiện badge
         if (newCount > 0) {
-            // Nếu có hàng -> Xóa class 'hidden' để nó hiện ra ngay
             cartCountBadge.classList.remove('hidden');
         } else {
-            // Nếu = 0 -> Thêm class 'hidden' để ẩn đi
             cartCountBadge.classList.add('hidden');
         }
     }
-    // ---------------------------
 
     allAddToCartButtons.forEach(button => {
         button.addEventListener('click', async function(event) {
             event.preventDefault();
 
+            // Nếu chưa đăng nhập -> Chuyển trang
             if (!isLoggedIn) {
                 window.location.href = loginUrl;
                 return;
             }
 
-            // Hiệu ứng loading
+            // Lưu nội dung cũ để restore sau
             const originalHtml = this.innerHTML;
+            
+            // Hiệu ứng loading
             this.disabled = true;
             this.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i>';
 
-            // Parse dữ liệu
+            // Parse dữ liệu từ data-attribute
             let productData;
             try {
                  productData = JSON.parse(this.dataset.productJson);
@@ -62,18 +64,19 @@ document.addEventListener('DOMContentLoaded', () => {
 
                 const result = await response.json();
 
-                // Xử lý redirect nếu chưa login (backend trả về 401)
+                // Xử lý redirect (VD: Token hết hạn)
                 if (response.status === 401 && result.redirect) {
                     window.location.href = result.redirect;
                     return;
                 }
 
                 if (result.success) {
-                    // --- GỌI HÀM CẬP NHẬT UI NGAY LẬP TỨC ---
+                    // Cập nhật UI thành công
                     updateCartIconCount(result.newCartCount);
 
-                    // Hiệu ứng thành công
                     this.innerHTML = '<i class="fa-solid fa-check"></i> Đã thêm';
+                    
+                    // Reset nút sau 1.5s
                     setTimeout(() => {
                         this.disabled = false;
                         this.innerHTML = originalHtml;
@@ -83,11 +86,17 @@ document.addEventListener('DOMContentLoaded', () => {
                 }
 
             } catch (error) {
+                // Xử lý lỗi (VD: Hết hàng, Lỗi server)
                 console.error('Lỗi:', error);
-                this.disabled = false;
-                this.innerHTML = 'Lỗi!';
+                
+                // Hiển thị thông báo lỗi ngắn gọn trên nút bấm
+                this.innerHTML = `<span style="font-size: 12px;">${error.message.substring(0, 15)}...</span>`;
+                this.classList.add('bg-red-500', 'hover:bg-red-600'); // Đổi màu đỏ báo lỗi
+                
                 setTimeout(() => {
+                     this.disabled = false;
                      this.innerHTML = originalHtml;
+                     this.classList.remove('bg-red-500', 'hover:bg-red-600');
                 }, 2000);
             }
         });

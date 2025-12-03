@@ -12,7 +12,7 @@
         <div class="text-right">
 
             <span class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium
-                {{-- Logic chọn màu: Nếu DELIVERED thì màu xanh, còn lại là màu tím --}}
+                {{-- Chỉnh Logic chọn màu: Nếu DELIVERED thì màu xanh, còn lại là màu tím --}}
                 {{ ($order['status'] ?? '') === 'DELIVERED' 
                     ? 'bg-green-100 text-green-800' 
                     : 'bg-purple-100 text-purple-800' }}">

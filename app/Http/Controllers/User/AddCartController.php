@@ -4,20 +4,17 @@ namespace App\Http\Controllers\User;
 
 use App\Http\Controllers\Controller;
 use App\Services\AddCartService;
-use App\Services\ApiClientService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
+use Carbon\Carbon; // Thư viện xử lý ngày giờ
 
-//thắng
 class AddCartController extends Controller
 {
     protected $addCartService;
-    //protected $api;
 
-    public function __construct(AddCartService $addCartService, ApiClientService $api)
+    public function __construct(AddCartService $addCartService)
     {
         $this->addCartService = $addCartService;
-        //$this->api = $api;
     }
 
     public function add(Request $request)
@@ -33,81 +30,122 @@ class AddCartController extends Controller
 
         // 2. Lấy dữ liệu sản phẩm
         $product = $request->input('product_json');
-        Log::info('AddCart Request:', ['product' => $product]);
-
-        // 🟢 NHẬN THÔNG TIN VARIANT ĐƯỢC CHỌN
-        // Nếu client gửi lên variant đã chọn thì lấy, không thì null
         $selectedVariant = $product['selected_variant'] ?? null;
 
         if (!$product) {
-            return response()->json(['success' => false, 'message' => 'Dữ liệu sản phẩm lỗi'], 400);
+            return response()->json(['success' => false, 'message' => 'Dữ liệu lỗi'], 400);
         }
 
         try {
-            // 3. LẤY GIỎ HÀNG TỪ API (THAY VÌ SESSION)
+            // Lấy giỏ hàng hiện tại
             $cartResponse = $this->addCartService->getCart();
             $cart = $cartResponse['data'] ?? [];
 
-            // 🟢 TẠO ID DUY NHẤT CHO CART ITEM
-            // Nếu sản phẩm có variant, ID trong giỏ sẽ là "ID_Sản_Phẩm" + "Variant_Value"
-            // Để phân biệt iPhone Đen và iPhone Trắng là 2 dòng khác nhau
+            // Tạo ID duy nhất
             $productId = $product['id'] ?? $product['_id'];
             $cartItemId = $selectedVariant
                 ? $productId . '_' . $selectedVariant['value']
                 : $productId;
 
+            // ====================================================
+            // 🔴 1. TÍNH TOÁN GIÁ CUỐI CÙNG (BAO GỒM KHUYẾN MÃI)
+            // ====================================================
+            $basePrice = $product['price'] ?? 0;
+            $variantPrice = $selectedVariant ? ($selectedVariant['price'] ?? 0) : 0;
+            
+            // Giá trước khi giảm (Giá gốc + Giá biến thể)
+            $finalPrice = $basePrice + $variantPrice;
+
+            // Kiểm tra Promotion
+            if (!empty($product['promotion'])) {
+                $promo = $product['promotion'];
+                
+                // Kiểm tra xem khuyến mãi có đang chạy không
+                $now = Carbon::now();
+                $start = Carbon::parse($promo['startDate']);
+                $end = Carbon::parse($promo['endDate']);
+                $isActive = $promo['isActive'] ?? false;
+
+                if ($isActive && $now->between($start, $end)) {
+                    $discountPercent = floatval($promo['discount']); // VD: 15
+                    
+                    // Áp dụng giảm giá: Giá = Giá cũ * (100 - %)/100
+                    $finalPrice = $finalPrice * ((100 - $discountPercent) / 100);
+                }
+            }
+            // ====================================================
+
+            // ====================================================
+            // 🔴 2. XÁC ĐỊNH TỒN KHO
+            // ====================================================
+            $currentStock = 0;
+            if ($selectedVariant) {
+                $currentStock = $selectedVariant['stock'] ?? 0;
+            } else {
+                $currentStock = $product['stock'] ?? 0;
+            }
+
+            if ($currentStock <= 0) {
+                return response()->json(['success' => false, 'message' => 'Sản phẩm đã hết hàng!'], 400);
+            }
+            // ====================================================
+
             $found = false;
 
-            // Tìm xem có trong giỏ chưa
+            // Duyệt giỏ hàng để tìm sản phẩm trùng
             foreach ($cart as &$item) {
-                // So sánh theo CartItemId tự tạo (hoặc so sánh cả id và variant value)
                 $itemVariant = $item['variant'] ?? null;
                 $reqVariant = $selectedVariant ? $selectedVariant['value'] : null;
 
                 if ($item['productId'] == $productId && $itemVariant == $reqVariant) {
+                    
+                    // Chặn nếu cộng thêm sẽ vượt quá kho
+                    if (($item['quantity'] + 1) > $currentStock) {
+                        return response()->json([
+                            'success' => false, 
+                            'message' => "Kho chỉ còn $currentStock sản phẩm. Không thể thêm tiếp!"
+                        ], 400);
+                    }
+
                     $item['quantity'] += 1;
+                    $item['stock'] = $currentStock; // Cập nhật lại stock mới nhất
+                    $item['price'] = $finalPrice;   // Cập nhật lại giá (phòng khi giá thay đổi)
+                    
                     $found = true;
                     break;
                 }
             }
 
-            // Nếu chưa có, thêm mới
+            // Nếu chưa có thì thêm mới
             if (!$found) {
-                // Xử lý ảnh
                 $img = 'https://via.placeholder.com/150';
                 if (!empty($product['images'][0])) {
                     $img = is_array($product['images'][0]) ? $product['images'][0]['url'] : $product['images'][0];
                 } elseif (!empty($product['image'])) {
                     $img = $product['image'];
                 }
-                // 🟢 LOGIC TÍNH GIÁ MỚI (CỘNG DỒN)
-                $basePrice = $product['price'] ?? $product['GiaBan'] ?? 0;
-                $variantPrice = $selectedVariant ? ($selectedVariant['price'] ?? 0) : 0;
-
-                $finalPrice = $basePrice + $variantPrice;
 
                 $cart[] = [
                     'productId' => $productId,
                     'name' => $product['name'] ?? 'Sản phẩm',
-                    'price' => $finalPrice, // Lưu tổng tiền
+                    'price' => $finalPrice, // Lưu giá ĐÃ GIẢM
                     'quantity' => 1,
                     'image' => $img,
-                    'variant' => $selectedVariant ? $selectedVariant['value'] : null
+                    'variant' => $selectedVariant ? $selectedVariant['value'] : null,
+                    'stock' => $currentStock // Lưu tồn kho để check sau này
                 ];
             }
 
-            // 4. ĐẨY GIỎ HÀNG LÊN API (QUAN TRỌNG NHẤT)
+            // Cập nhật qua API Backend
             $updateResponse = $this->addCartService->updateCart($cart);
 
             if (!($updateResponse['success'] ?? false)) {
-                throw new \Exception($updateResponse['message'] ?? 'Không thể cập nhật giỏ hàng');
+                throw new \Exception($updateResponse['message'] ?? 'Lỗi cập nhật giỏ hàng');
             }
 
-            // 5. ĐỒNG BỘ LẠI SESSION TỪ API (để header cập nhật)
-            session(['user.cart' => $cart]);
+            // Lưu session
+            session(['user.cart' => $updateResponse['data']]);
             session()->save();
-
-            Log::info('Cart Updated via API:', ['count' => count($cart)]);
 
             return response()->json([
                 'success' => true,
@@ -117,10 +155,7 @@ class AddCartController extends Controller
 
         } catch (\Exception $e) {
             Log::error('Cart Error: ' . $e->getMessage());
-            return response()->json([
-                'success' => false,
-                'message' => 'Lỗi: ' . $e->getMessage()
-            ], 500);
+            return response()->json(['success' => false, 'message' => 'Lỗi: ' . $e->getMessage()], 500);
         }
     }
 }
