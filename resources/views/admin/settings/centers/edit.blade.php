@@ -53,13 +53,7 @@
             @error('email') <p class="text-red-500 text-sm">{{ $message }}</p> @enderror
         </div>
 
-        <!-- Open Hours -->
-        <div class="mb-4">
-            <label class="block font-medium">Giờ mở cửa</label>
-            <input type="text" name="openHours" value="{{ old('openHours', $center['openHours']) }}"
-                   class="w-full border rounded p-2 @error('openHours') border-red-500 @enderror">
-            @error('openHours') <p class="text-red-500 text-sm">{{ $message }}</p> @enderror
-        </div>
+
 
         <!-- Buttons -->
         <div class="flex justify-end gap-2">

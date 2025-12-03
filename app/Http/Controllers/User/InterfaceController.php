@@ -42,7 +42,7 @@ class InterfaceController extends Controller
             // Lấy ID dù nó là 'id' hay '_id'
             $rawId = $p['id'] ?? $p['_id'] ?? '';
             // Ép sang chuỗi và xóa khoảng trắng thừa
-            $strId = trim((string)$rawId);
+            $strId = trim((string) $rawId);
 
             if ($strId !== '') {
                 $policiesMap[$strId] = $p;
@@ -57,7 +57,7 @@ class InterfaceController extends Controller
         foreach ($products as &$product) {
             // Lấy ID bảo hành từ sản phẩm
             $wIdRaw = $product['warrantyPolicyId'] ?? '';
-            $wId = trim((string)$wIdRaw);
+            $wId = trim((string) $wIdRaw);
 
             $displayLabel = 'New'; // Mặc định
 
@@ -94,7 +94,6 @@ class InterfaceController extends Controller
             'error' => null
         ]);
     }
-
     // Các hàm khác giữ nguyên (searchProducts, getCategories...)
     public function searchProducts(Request $request)
     {

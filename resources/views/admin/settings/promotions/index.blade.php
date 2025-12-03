@@ -48,7 +48,7 @@
                             <span class="font-mono font-medium">{{ $promo['code'] }}</span>
                         </div>
                     </td>
-                    <td class="p-4 align-middle">{{ $promo['discount'] * 100 }}% off</td>
+                    <td class="p-4 align-middle">{{ $promo['discount'] }}% off</td>
                     <td class="p-4 align-middle">
                         <span class="inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium {{ $promo['isActive'] ? 'bg-emerald-100 text-emerald-700' : 'bg-gray-100 text-gray-700' }}">
                             {{ $promo['isActive'] ? 'Active' : 'Inactive' }}

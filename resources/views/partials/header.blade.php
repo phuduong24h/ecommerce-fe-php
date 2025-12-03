@@ -52,16 +52,40 @@
                        {{ request()->is('/') ? 'bg-gradient-to-r from-cyan-500 to-blue-500 text-white shadow' : 'text-gray-700 hover:bg-gray-100 hover:text-cyan-600' }}">
                         <i class="fas fa-home"></i> Trang Chủ
                     </a>
-                    <a href="{{ route('warranty.index') }}"
-                        class="flex items-center gap-1 px-3 py-1 rounded transition-all duration-300 font-medium
+                    <a href="{{ route('warranty.index') }}" class="flex items-center gap-1 px-3 py-1 rounded transition-all duration-300 font-medium
                     {{ request()->routeIs('warranty.index')
-                        ? 'bg-gradient-to-r from-purple-500 to-pink-500 text-white shadow'
-                        : 'text-gray-700 hover:bg-gray-100 hover:text-purple-600' }}">
+    ? 'bg-gradient-to-r from-purple-500 to-pink-500 text-white shadow'
+    : 'text-gray-700 hover:bg-gray-100 hover:text-purple-600' }}">
                         <i class="fas fa-shield"></i> Bảo Hành
                     </a>
 
                 </nav>
+
             </div>
+          <!-- Dropdown Category Menu -->
+<div class="relative group">
+    <!-- Button chính -->
+    <button
+        class="flex items-center gap-1 px-3 py-1 rounded transition-all duration-300 font-medium text-gray-700 hover:bg-gray-100">
+        <i class="fas fa-list"></i> Danh Mục
+        <i class="fas fa-chevron-down text-xs"></i>
+    </button>
+
+    <!-- Dropdown -->
+    <ul
+        class="absolute left-0 mt-1 w-48 bg-white border border-gray-200 rounded shadow-lg z-50 hidden group-hover:block">
+        @foreach ($categories as $cat)
+            <li>
+                <a href="{{ route('category.show', ['id' => $cat['id']]) }}"
+                   class="block px-4 py-2 text-gray-700 hover:bg-gray-100 hover:text-cyan-600">
+                    {{ $cat['name'] }}
+                </a>
+            </li>
+        @endforeach
+    </ul>
+</div>
+
+
 
             <!-- RIGHT: User, Cart, Language, Admin/Customer -->
             <div class="flex items-center space-x-3">
@@ -82,8 +106,7 @@
                         $cartTotal = $cart_count ?? count(session('user.cart', []));
                     @endphp
 
-                    <span id="cart-count"
-                        class="absolute -top-2 -right-2 w-5 h-5 flex items-center justify-center 
+                    <span id="cart-count" class="absolute -top-2 -right-2 w-5 h-5 flex items-center justify-center 
                             text-[10px] bg-red-500 text-white rounded-full
                             {{ $cart_count > 0 ? '' : 'hidden' }}">
                         {{ $cart_count }}
@@ -130,9 +153,8 @@
                         </button>
 
                         {{-- 3. Box dropdown (chỉ hiện khi hover 'group') --}}
-                        <div
-                            class="absolute right-0 mt-1 w-48 bg-white rounded-lg shadow-xl border border-gray-100 z-50
-                                    hidden group-hover:block">
+                        <div class="absolute right-0 mt-1 w-48 bg-white rounded-lg shadow-xl border border-gray-100 z-50
+                                        hidden group-hover:block">
                             <div class="py-1">
                                 {{-- Chỉ hiện nút Đăng xuất theo yêu cầu --}}
                                 <a href="{{ route('logout') }}"
@@ -147,7 +169,7 @@
                     {{-- CHƯA ĐĂNG NHẬP (Giữ nguyên) --}}
                     <a href="{{ route('login') }}"
                         class="px-4 py-2 rounded text-sm font-medium transition-all duration-300
-                       {{ request()->is('login') ? 'bg-gradient-to-r from-purple-500 to-pink-500 text-white shadow-lg shadow-pink-500/30' : 'border border-gray-300 text-gray-700 hover:bg-gray-100 hover:text-purple-600' }}">
+                           {{ request()->is('login') ? 'bg-gradient-to-r from-purple-500 to-pink-500 text-white shadow-lg shadow-pink-500/30' : 'border border-gray-300 text-gray-700 hover:bg-gray-100 hover:text-purple-600' }}">
                         Khách Hàng
                     </a>
                 @endif

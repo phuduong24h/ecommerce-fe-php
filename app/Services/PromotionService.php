@@ -87,10 +87,18 @@ class PromotionService
         return [
             'code' => $data['code'] ?? '',
             'description' => $data['description'] ?? '',
-            'discount' => isset($data['discount']) ? floatval($data['discount']) : 0, // convert sang float
+            'discount' => isset($data['discount']) ? floatval($data['discount']) : 0,
             'startDate' => $data['startDate'] ?? null,
             'endDate' => $data['endDate'] ?? null,
-            'isActive' => isset($data['isActive']) ? boolval($data['isActive']) : true, // convert sang boolean
+            'isActive' => isset($data['isActive']) ? boolval($data['isActive']) : true,
+
+            // products fix cho Prisma
+            'products' => isset($data['productIds']) && is_array($data['productIds']) && count(array_filter($data['productIds'])) > 0
+                ? ['set' => array_map(fn($id) => ['id' => $id], array_filter($data['productIds']))]
+                : ['set' => []],
         ];
     }
+
+
+
 }

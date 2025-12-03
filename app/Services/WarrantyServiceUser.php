@@ -56,6 +56,7 @@ class WarrantyServiceUser
             'issueDesc' => $data['description'] ?? $data['issueDesc'] ?? '',
             'purchasedAt' => $data['purchasedAt'] ?? $data['purchased_at'] ?? null,
             'productSerial' => $data['productSerial'] ?? $data['serial_number'] ?? '',
+            'images' => $data['images'] ?? []
         ];
     }
     /**

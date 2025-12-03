@@ -3,76 +3,182 @@
 @section('title', 'Sửa khuyến mãi')
 
 @section('content')
-<div class="container mx-auto p-6 max-w-lg">
+    <div class="container mx-auto p-6 max-w-lg">
 
-    <h1 class="text-2xl font-bold mb-6">Sửa khuyến mãi</h1>
+        <h1 class="text-2xl font-bold mb-6">Sửa khuyến mãi</h1>
+        <!-- Hiển thị flash messages -->
+        @if(session('success'))
+            <div class="bg-green-100 text-green-700 p-4 rounded mb-4">
+                {{ session('success') }}
+            </div>
+        @endif
 
-    @if ($errors->any())
-        <div class="bg-red-100 text-red-700 p-4 rounded mb-4">
-            <ul class="list-disc list-inside">
-                @foreach ($errors->all() as $error)
-                    <li>{{ $error }}</li>
+        @if(session('error'))
+            <div class="bg-red-100 text-red-700 p-4 rounded mb-4">
+                {{ session('error') }}
+            </div>
+        @endif
+
+        @if ($errors->any())
+            <div class="bg-red-100 text-red-700 p-4 rounded mb-4">
+                <ul class="list-disc list-inside">
+                    @foreach ($errors->all() as $error)
+                        <li>{{ $error }}</li>
+                    @endforeach
+                </ul>
+            </div>
+        @endif
+        @if ($errors->any())
+            <div class="bg-red-100 text-red-700 p-4 rounded mb-4">
+                <ul class="list-disc list-inside">
+                    @foreach ($errors->all() as $error)
+                        <li>{{ $error }}</li>
+                    @endforeach
+                </ul>
+            </div>
+        @endif
+
+        <form action="{{ route('admin.settings.promotions.update', $promotion['id']) }}" method="POST"
+            class="space-y-4 bg-white p-6 rounded-lg shadow">
+            @csrf
+            @method('PUT')
+
+            <!-- Code -->
+            <div>
+                <label class="block text-sm font-medium mb-1">Mã khuyến mãi *</label>
+                <input type="text" name="code" value="{{ old('code', $promotion['code']) }}" required
+                    class="w-full border rounded px-3 py-2">
+            </div>
+
+            <!-- Description -->
+            <div>
+                <label class="block text-sm font-medium mb-1">Mô tả</label>
+                <textarea name="description" rows="3"
+                    class="w-full border rounded px-3 py-2">{{ old('description', $promotion['description']) }}</textarea>
+            </div>
+
+            <!-- Discount -->
+            <div>
+                <label class="block text-sm font-medium mb-1">Giảm giá (%) *</label>
+                <input type="number" name="discount" step="1" min="0" max="100"
+                    value="{{ old('discount', $promotion['discount']) }}" required class="w-full border rounded px-3 py-2">
+            </div>
+
+            <!-- Start Date -->
+            <div>
+                <label class="block text-sm font-medium mb-1">Ngày bắt đầu *</label>
+                <input type="date" name="startDate" value="{{ old('startDate', substr($promotion['startDate'], 0, 10)) }}"
+                    required class="w-full border rounded px-3 py-2">
+            </div>
+
+            <!-- End Date -->
+            <div>
+                <label class="block text-sm font-medium mb-1">Ngày kết thúc *</label>
+                <input type="date" name="endDate" value="{{ old('endDate', substr($promotion['endDate'], 0, 10)) }}"
+                    required class="w-full border rounded px-3 py-2">
+            </div>
+
+            <!-- Active -->
+            <div class="flex items-center gap-2">
+                <input type="checkbox" name="isActive" value="1" {{ old('isActive', $promotion['isActive']) ? 'checked' : '' }}>
+                <span class="text-sm font-medium">Kích hoạt</span>
+            </div>
+
+            <!-- Chọn sản phẩm -->
+            <div class="border-t pt-4">
+                <h2 class="text-lg font-semibold mb-2">Áp dụng cho sản phẩm</h2>
+                <div id="product-select-list" class="space-y-3">
+                    @php
+                        $promotion = $promotion ?? ['id' => null];
+
+                        $selectedIds = old(
+                            'productIds',
+                            collect($products)
+                                ->filter(fn($p) => ($p['promotionId'] ?? null) === $promotion['id'])
+                                ->pluck('id')
+                                ->all()
+                        );
+
+                        $selectedProducts = [];
+                        foreach ($selectedIds as $id) {
+                            $prod = collect($products)->firstWhere('id', $id);
+                            if ($prod)
+                                $selectedProducts[] = $prod;
+                        }
+                    @endphp
+                    @if(count($selectedProducts) > 0)
+                        @foreach($selectedProducts as $index => $prod)
+                            <div class="flex gap-2 items-center">
+                                <select name="productIds[]" class="w-full border rounded px-3 py-2">
+                                    <option value="">-- Chọn sản phẩm --</option>
+                                    @foreach($products as $p)
+                                        <option value="{{ $p['id'] }}" {{ $p['id'] == $prod['id'] ? 'selected' : '' }}>
+                                            {{ $p['name'] }}
+                                        </option>
+                                    @endforeach
+                                </select>
+                                <button type="button"
+                                    class="remove-prod text-red-500 text-sm {{ count($selectedProducts) == 1 ? 'hidden' : '' }}">X</button>
+                            </div>
+                        @endforeach
+                    @else
+                        <div class="flex gap-2 items-center">
+                            <select name="productIds[]" class="w-full border rounded px-3 py-2">
+                                <option value="">-- Chọn sản phẩm --</option>
+                                @foreach($products as $p)
+                                    <option value="{{ $p['id'] }}">{{ $p['name'] }}</option>
+                                @endforeach
+                            </select>
+                            <button type="button" class="remove-prod text-red-500 text-sm hidden">X</button>
+                        </div>
+                    @endif
+                </div>
+
+                <button type="button" id="addProductBtn" class="text-purple-600 text-sm mt-2 hover:underline">+ Thêm sản
+                    phẩm</button>
+            </div>
+
+            <!-- Buttons -->
+            <div class="flex justify-end gap-2 pt-4">
+                <a href="{{ route('admin.settings.index', ['tab' => 'promotions']) }}"
+                    class="px-4 py-2 rounded bg-gray-200 text-gray-700 hover:bg-gray-300">Hủy</a>
+                <button type="submit" class="px-4 py-2 rounded bg-purple-500 text-white hover:bg-purple-600">Cập
+                    nhật</button>
+            </div>
+        </form>
+    </div>
+
+    <script>
+        const productList = document.getElementById('product-select-list');
+        const btnAdd = document.getElementById('addProductBtn');
+
+        btnAdd.addEventListener('click', () => {
+            const div = document.createElement('div');
+            div.className = "flex gap-2 items-center mt-2";
+            div.innerHTML = `
+            <select name="productIds[]" class="w-full border rounded px-3 py-2">
+                <option value="">-- Chọn sản phẩm --</option>
+                @foreach($products as $p)
+                    <option value="{{ $p['id'] }}">{{ $p['name'] }}</option>
                 @endforeach
-            </ul>
-        </div>
-    @endif
+            </select>
+            <button type="button" class="remove-prod text-red-500 text-sm">X</button>
+        `;
+            productList.appendChild(div);
+        });
 
-    <form action="{{ route('admin.settings.promotions.update', $promotion['id']) }}" method="POST" class="bg-white p-6 rounded shadow">
-        @csrf
-        @method('PUT')
+        productList.addEventListener('click', (e) => {
+            if (e.target.classList.contains('remove-prod')) {
+                e.target.closest('div').remove();
+            }
+        });
 
-        <!-- Code -->
-        <div class="mb-4">
-            <label class="block font-medium">Mã khuyến mãi *</label>
-            <input type="text" name="code" value="{{ old('code', $promotion['code']) }}" required
-                   class="w-full border rounded p-2 @error('code') border-red-500 @enderror">
-            @error('code') <p class="text-red-500 text-sm">{{ $message }}</p> @enderror
-        </div>
+        // Loại bỏ select trống trước submit
+        document.querySelector('form').addEventListener('submit', (e) => {
+            document.querySelectorAll('select[name="productIds[]"]').forEach(s => {
+                if (!s.value) s.remove();
+            });
+        });
 
-        <!-- Description -->
-        <div class="mb-4">
-            <label class="block font-medium">Mô tả</label>
-            <textarea name="description" rows="3" class="w-full border rounded p-2 @error('description') border-red-500 @enderror">{{ old('description', $promotion['description']) }}</textarea>
-            @error('description') <p class="text-red-500 text-sm">{{ $message }}</p> @enderror
-        </div>
-
-        <!-- Discount -->
-        <div class="mb-4">
-            <label class="block font-medium">Giảm giá (%) *</label>
-            <input type="number" name="discount" step="0.01" value="{{ old('discount', $promotion['discount']) }}" required
-                   class="w-full border rounded p-2 @error('discount') border-red-500 @enderror">
-            @error('discount') <p class="text-red-500 text-sm">{{ $message }}</p> @enderror
-        </div>
-
-        <!-- Start Date -->
-        <div class="mb-4">
-            <label class="block font-medium">Ngày bắt đầu *</label>
-            <input type="date" name="startDate" value="{{ old('startDate', substr($promotion['startDate'], 0, 10)) }}" required
-                   class="w-full border rounded p-2 @error('startDate') border-red-500 @enderror">
-            @error('startDate') <p class="text-red-500 text-sm">{{ $message }}</p> @enderror
-        </div>
-
-        <!-- End Date -->
-        <div class="mb-4">
-            <label class="block font-medium">Ngày kết thúc *</label>
-            <input type="date" name="endDate" value="{{ old('endDate', substr($promotion['endDate'], 0, 10)) }}" required
-                   class="w-full border rounded p-2 @error('endDate') border-red-500 @enderror">
-            @error('endDate') <p class="text-red-500 text-sm">{{ $message }}</p> @enderror
-        </div>
-
-        <!-- Active -->
-        <div class="flex items-center gap-2 mb-4">
-            <input type="checkbox" name="isActive" id="isActive" value="1" {{ old('isActive', $promotion['isActive']) ? 'checked' : '' }}>
-            <label for="isActive" class="text-sm font-medium text-gray-700">Kích hoạt</label>
-        </div>
-
-        <!-- Buttons -->
-        <div class="flex justify-end gap-2">
-            <a href="{{ route('admin.settings.index', ['tab' => 'promotions']) }}" 
-               class="px-4 py-2 rounded bg-gray-200 text-gray-700 hover:bg-gray-300">Hủy</a>
-            <button type="submit" class="bg-purple-600 text-white px-6 py-2 rounded hover:bg-purple-700">Cập nhật</button>
-        </div>
-
-    </form>
-</div>
+    </script>
 @endsection

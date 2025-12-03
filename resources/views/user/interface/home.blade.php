@@ -23,10 +23,10 @@
                             name="search"
                             value="{{ $searchTerm ?? '' }}">
                 </div>
-                <div class="header__search-select">
+                <!-- <div class="header__search-select">
                     <span class="header__search-select-label">Tất cả danh mục</span>
                     <i class="header__search-select-icon fa-solid fa-angle-down"></i>
-                </div>
+                </div> -->
                 <button type="submit" style="display: none;"></button>
             </form>
 

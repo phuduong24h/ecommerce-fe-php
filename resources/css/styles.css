@@ -277,6 +277,7 @@ body {
     flex: 1; /* Chiếm phần lớn không gian */
     display: flex;
     align-items: center;
+    border: 1px solid var(--border-color);
     height: 44px;
     background-color: #fff; /* Màu xám nhạt */
     border-radius: 8px; /* Bo góc */
@@ -306,6 +307,7 @@ body {
 }
 
 .header__search-select {
+    border: 1px solid var(--border-color);
     position: relative;
     cursor: pointer;
     display: flex;

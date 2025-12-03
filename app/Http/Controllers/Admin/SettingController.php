@@ -275,7 +275,8 @@ class SettingController extends Controller
 
     public function createPromotionForm()
     {
-        return view('admin.settings.promotions.create');
+        $products = $this->productService->getAllProducts();
+        return view('admin.settings.promotions.create', compact('products'));
     }
 
     public function createPromotion(Request $request)
@@ -283,10 +284,13 @@ class SettingController extends Controller
         $validated = $request->validate([
             'code' => 'required|string|max:50',
             'description' => 'nullable|string',
-            'discount' => 'required|numeric|min:0.01', // thêm validate cho discount
+            'discount' => 'required|numeric|min:0|max:99', // thêm validate cho discount
             'startDate' => 'required|date',
             'endDate' => 'required|date|after_or_equal:startDate',
             'isActive' => 'sometimes|boolean',
+            'productIds' => 'required|array',
+            'productIds.*' => 'required|string',
+
         ]);
 
         // Fix isActive và format date
@@ -307,41 +311,50 @@ class SettingController extends Controller
     }
 
 
+    // =====================
+// Controller
+// =====================
     public function editPromotionForm($id)
     {
         $promotion = collect($this->promotionService->getAllPromotions())
             ->firstWhere('id', $id);
+
         if (!$promotion) {
             return redirect()->route('admin.settings.promotions.index', ['tab' => 'promotions'])
                 ->with('error', 'Promotion không tồn tại!')
                 ->with('activeTab', 'promotions');
         }
-        return view('admin.settings.promotions.edit', compact('promotion'));
-    }
 
+        // Lấy tất cả sản phẩm và đánh dấu sản phẩm đã thuộc promotion
+        $products = $this->productService->getAllProducts();
+        foreach ($products as &$p) {
+            $p['isSelected'] = ($p['promotionId'] ?? null) === $promotion['id'];
+        }
+
+        return view('admin.settings.promotions.edit', compact('promotion', 'products'));
+    }
 
     public function updatePromotion(Request $request, $id)
     {
         $validated = $request->validate([
             'code' => 'required|string|max:50',
             'description' => 'nullable|string',
-            'discount' => 'required|numeric|min:0.01', // thêm validate cho discount
+            'discount' => 'required|numeric|min:0|max:99',
             'startDate' => 'required|date',
             'endDate' => 'required|date|after_or_equal:startDate',
             'isActive' => 'sometimes|boolean',
+            'productIds' => 'required|array',
+            'productIds.*' => 'required|string',
         ]);
 
-        // Chuyển checkbox isActive về boolean
         $validated['isActive'] = $request->has('isActive');
-
-        // Format ngày
         $validated['startDate'] = date('c', strtotime($validated['startDate']));
         $validated['endDate'] = date('c', strtotime($validated['endDate']));
 
         $result = $this->promotionService->updatePromotion($id, $validated);
 
         if (!empty($result['success']) && $result['success'] == true) {
-            return redirect()->route('admin.settings.categories.index', ['tab' => 'promotions'])
+            return redirect()->route('admin.settings.promotions.index', ['tab' => 'promotions'])
                 ->with('success', 'Cập nhật promotion thành công!')
                 ->with('activeTab', 'promotions');
         }
